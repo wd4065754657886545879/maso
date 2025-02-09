@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fake Hacker Terminal with Green, White, and Red Flashing Background</title>
+  <title>Fake Hacker Terminal with Password Tip</title>
   <style>
     /* Reset and base styles */
     html, body {
@@ -44,10 +44,8 @@
     /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.9);
       display: flex;
       justify-content: center;
@@ -56,7 +54,7 @@
       color: #0f0;
       text-align: center;
     }
-    /* Big red message */
+    /* Big message for simulation activation */
     #bigHello {
       position: absolute;
       top: 50%;
@@ -74,6 +72,18 @@
       0% { opacity: 1; }
       50% { opacity: 0; }
       100% { opacity: 1; }
+    }
+    /* Tip message styling (for when user types "mason") */
+    #tipMessage {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 80px;
+      color: green;
+      z-index: 100;
+      display: none;
+      text-align: center;
     }
     /* Activated message effects */
     .activated {
@@ -93,7 +103,7 @@
   </style>
 </head>
 <body>
-  <!-- Password Gate -->
+  <!-- Password Overlay -->
   <div id="passwordOverlay">
     <div>
       <h1>Enter Password</h1>
@@ -102,6 +112,9 @@
       <p id="passwordError" style="color:red; display:none;">Incorrect Password!</p>
     </div>
   </div>
+
+  <!-- Tip Message (for when user types "mason") -->
+  <div id="tipMessage">Try typing <span style="color:red;">M</span><span style="color:green;">ason</span></div>
 
   <!-- Flash Overlay for Background Colors -->
   <div id="flashOverlay"></div>
@@ -234,13 +247,22 @@
     const passwordInput = document.getElementById("passwordInput");
     const passwordButton = document.getElementById("passwordButton");
     const passwordError = document.getElementById("passwordError");
-    const correctPassword = "Mason";
+    const correctPassword = "Mason"; // Correct password with a capital "M"
 
     passwordButton.addEventListener("click", () => {
-      if (passwordInput.value === correctPassword) {
+      const entered = passwordInput.value;
+      // If correct password (capital M), start the simulation.
+      if (entered === correctPassword) {
         passwordOverlay.style.display = "none";
         displayMessages();
-      } else {
+      }
+      // If user types "mason" in lowercase, show the tip message.
+      else if (entered === "mason") {
+        passwordOverlay.style.display = "none";
+        document.getElementById("tipMessage").style.display = "block";
+      }
+      // Otherwise, display an error.
+      else {
         passwordError.style.display = "block";
       }
     });
