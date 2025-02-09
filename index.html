@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake Hacker Terminal with Green, White, and Red Flashing Background</title>
+  <style>
+    /* Reset and base styles */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background-color: black;
+      font-family: "Courier New", Courier, monospace;
+    }
+    /* Matrix canvas */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    /* Flash overlay (for green, white, and red flashing background) */
+    #flashOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    /* Console overlay for hacker messages */
+    #overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 2;
+      color: #0f0;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+    /* Password overlay styles */
+    #passwordOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      color: #0f0;
+      text-align: center;
+    }
+    /* Big red message */
+    #bigHello {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 80px;
+      color: red;
+      z-index: 3;
+      display: none;
+      animation: flashText 1s infinite;
+      text-align: center;
+      white-space: pre-wrap;
+    }
+    @keyframes flashText {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    /* Activated message effects */
+    .activated {
+      animation: flash 1s infinite, shake 0.5s infinite;
+    }
+    @keyframes flash {
+      0%, 100% { color: #0f0; }
+      50% { color: red; }
+    }
+    @keyframes shake {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(2px, -2px); }
+      50% { transform: translate(-2px, 2px); }
+      75% { transform: translate(2px, 2px); }
+      100% { transform: translate(0, 0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Password Gate -->
+  <div id="passwordOverlay">
+    <div>
+      <h1>Enter Password</h1>
+      <input type="password" id="passwordInput" placeholder="Password" autofocus>
+      <button id="passwordButton">Enter</button>
+      <p id="passwordError" style="color:red; display:none;">Incorrect Password!</p>
+    </div>
+  </div>
+
+  <!-- Flash Overlay for Background Colors -->
+  <div id="flashOverlay"></div>
+
+  <!-- Console Overlay for Hacker Messages -->
+  <div id="overlay">
+    <div id="console"></div>
+  </div>
+
+  <!-- Matrix Canvas -->
+  <canvas id="matrix"></canvas>
+
+  <!-- Big Message (will display "THX FOR YOUR PASSWORDS") -->
+  <div id="bigHello">THX FOR YOUR PASSWORDS</div>
+
+  <script>
+    /* MATRIX DIGITAL RAIN SETUP */
+    const canvas = document.getElementById("matrix");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const fontSize = 16;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0F0";
+      ctx.font = fontSize + "px monospace";
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters.charAt(Math.floor(Math.random() * letters.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 50);
+
+    /* FAKE CONSOLE LOG SIMULATION */
+    const consoleElement = document.getElementById("console");
+    const messages = [
+      "Initializing hack protocol...",
+      "Bypassing firewall...",
+      "Accessing secure server...",
+      "Decrypting data streams...",
+      "HACKER MODE ACTIVATED!"
+    ];
+    let msgIndex = 0;
+
+    function typeMessage(message, callback) {
+      let i = 0;
+      const line = document.createElement("div");
+      // Mark the activation message for special effects
+      if (message === "HACKER MODE ACTIVATED!") {
+        line.id = "activatedLine";
+      }
+      consoleElement.appendChild(line);
+
+      function type() {
+        if (i < message.length) {
+          line.innerHTML += message.charAt(i);
+          i++;
+          setTimeout(type, 50);
+        } else {
+          line.innerHTML += "<br>";
+          callback(message, line);
+        }
+      }
+      type();
+    }
+
+    function displayMessages() {
+      if (msgIndex < messages.length) {
+        typeMessage(messages[msgIndex], (msg, lineElement) => {
+          if (msg === "HACKER MODE ACTIVATED!") {
+            flashWeirdStuff(lineElement);
+          }
+          msgIndex++;
+          setTimeout(displayMessages, 500);
+        });
+      } else {
+        // Optionally, append a blinking cursor after messages finish
+        consoleElement.innerHTML += '<span class="blink">_</span>';
+      }
+    }
+
+    /* TRIGGERED WHEN ACTIVATION MESSAGE IS TYPED */
+    function flashWeirdStuff(lineElement) {
+      // Add flashing and shaking effects to the activation message
+      lineElement.classList.add("activated");
+
+      // Briefly flash the canvas colors as an extra effect
+      let originalFillStyle = ctx.fillStyle;
+      let flashCount = 0;
+      let flashInterval = setInterval(() => {
+        ctx.fillStyle = (flashCount % 2 === 0) ? "#FF00FF" : "#00FFFF";
+        flashCount++;
+        if (flashCount > 10) {
+          clearInterval(flashInterval);
+          ctx.fillStyle = originalFillStyle;
+        }
+      }, 100);
+
+      // Begin flashing green, white, and red in the background
+      flashColorsEverywhere();
+
+      // Show the big red message "THX FOR YOUR PASSWORDS"
+      document.getElementById("bigHello").style.display = "block";
+    }
+
+    /* Update the flash overlay's background to cycle through green, white, and red every 200ms */
+    function flashColorsEverywhere() {
+      const flashOverlay = document.getElementById("flashOverlay");
+      const colors = ["rgba(0, 255, 0, 0.7)", "rgba(255, 255, 255, 0.7)", "rgba(255, 0, 0, 0.7)"];
+      let index = 0;
+      setInterval(() => {
+        flashOverlay.style.backgroundColor = colors[index];
+        index = (index + 1) % colors.length;
+      }, 200);
+    }
+
+    /* PASSWORD VERIFICATION & SIMULATION START */
+    const passwordOverlay = document.getElementById("passwordOverlay");
+    const passwordInput = document.getElementById("passwordInput");
+    const passwordButton = document.getElementById("passwordButton");
+    const passwordError = document.getElementById("passwordError");
+    const correctPassword = "Mason";
+
+    passwordButton.addEventListener("click", () => {
+      if (passwordInput.value === correctPassword) {
+        passwordOverlay.style.display = "none";
+        displayMessages();
+      } else {
+        passwordError.style.display = "block";
+      }
+    });
+
+    passwordInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        passwordButton.click();
+      }
+    });
+
+    /* Adjust the canvas size when the window is resized */
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
