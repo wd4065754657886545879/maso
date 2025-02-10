@@ -56,6 +56,13 @@
       color: #0f0;
       text-align: center;
     }
+    /* Header in the password overlay */
+    #madeByHeader {
+      font-size: 16px;
+      color: #0f0;
+      text-shadow: 0 0 5px #0f0;
+      margin-bottom: 20px;
+    }
     /* Big message for simulation activation */
     #bigHello {
       position: absolute;
@@ -97,7 +104,7 @@
       border: 1px solid #0f0;
       color: #0f0;
     }
-    /* Footer styling for "made by mason b." */
+    /* Footer styling for "made by mason b." in the bottom-right corner */
     #footer {
       position: fixed;
       bottom: 10px;
@@ -127,6 +134,8 @@
   <!-- Password Overlay -->
   <div id="passwordOverlay">
     <div>
+      <!-- New header above the password prompt -->
+      <p id="madeByHeader">made by : mason B.</p>
       <h1>Enter Password</h1>
       <input type="password" id="passwordInput" placeholder="Password" autofocus>
       <button id="passwordButton">Enter</button>
