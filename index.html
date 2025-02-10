@@ -488,13 +488,17 @@
     /*************************************************
      * CHAT BOX FUNCTIONS (for "msg" command)
      *************************************************/
-    // Generate a random session ID for this tab
-    const sessionId = "User " + Math.random().toString(36).substr(2, 5);
-    // Ensure a chatMessages array exists in localStorage
-    if (!localStorage.getItem("chatMessages")) {
-      localStorage.setItem("chatMessages", JSON.stringify([]));
-    }
+    // When using the chat, a username is required.
     function openChatBox() {
+      let username = localStorage.getItem("chatUsername");
+      if (!username) {
+        username = prompt("Enter your chat username:");
+        if (!username) {
+          alert("A username is required to use chat.");
+          return;
+        }
+        localStorage.setItem("chatUsername", username);
+      }
       document.getElementById("chatBox").style.display = "block";
       updateChatLog();
     }
@@ -515,7 +519,8 @@
       const text = chatInput.value.trim();
       if (text === "") return;
       let messages = JSON.parse(localStorage.getItem("chatMessages"));
-      messages.push({ sender: sessionId, text: text, timestamp: new Date().getTime() });
+      const sender = localStorage.getItem("chatUsername");
+      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
       localStorage.setItem("chatMessages", JSON.stringify(messages));
       chatInput.value = "";
       updateChatLog();
@@ -525,7 +530,6 @@
       if (e.key === "Enter") sendMessage();
     });
     document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    // Listen for storage events to update the chat log in real time
     window.addEventListener("storage", (e) => {
       if (e.key === "chatMessages") {
         updateChatLog();
@@ -591,7 +595,7 @@
       { cmd: "about", desc: "Displays program information." },
       { cmd: "version", desc: "Shows the system version." },
       { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a working search bar)." },
-      { cmd: "msg", desc: "Opens a chat box for multi-user chat." }
+      { cmd: "msg", desc: "Opens a chat box for multi-user chat (requires a username)." }
     ];
 
     terminalCommand.addEventListener("keyup", (e) => {
@@ -796,12 +800,11 @@
           output = "Version: 1.0.0 (simulation).";
           break;
         case "chome":
-          // This case is handled above in the event listener.
+          // Handled above—no modal output.
           output = "";
           break;
         case "msg":
-          // Open the chat box modal.
-          openChatBox();
+          // Handled below.
           output = "";
           break;
         default:
@@ -816,20 +819,23 @@
      *************************************************/
     function openEdgeCopy() {
       // Attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
+      // This works only on Windows systems with Edge installed and with the protocol registered.
       window.open("microsoft-edge:https://www.bing.com", "_blank");
     }
 
     /*************************************************
      * CHAT BOX FUNCTIONS (for "msg" command)
      *************************************************/
-    // Generate a random session ID for this tab
-    const sessionId = "User " + Math.random().toString(36).substr(2, 5);
-    // Ensure a chatMessages array exists in localStorage
-    if (!localStorage.getItem("chatMessages")) {
-      localStorage.setItem("chatMessages", JSON.stringify([]));
-    }
     function openChatBox() {
+      let username = localStorage.getItem("chatUsername");
+      if (!username) {
+        username = prompt("Enter your chat username:");
+        if (!username) {
+          alert("A username is required to use chat.");
+          return;
+        }
+        localStorage.setItem("chatUsername", username);
+      }
       document.getElementById("chatBox").style.display = "block";
       updateChatLog();
     }
@@ -838,7 +844,7 @@
     }
     function updateChatLog() {
       const chatLog = document.getElementById("chatLog");
-      let messages = JSON.parse(localStorage.getItem("chatMessages"));
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
       chatLog.innerHTML = "";
       messages.forEach(msg => {
         chatLog.innerHTML += `<p><strong>${msg.sender}:</strong> ${msg.text}</p>`;
@@ -849,8 +855,9 @@
       const chatInput = document.getElementById("chatInput");
       const text = chatInput.value.trim();
       if (text === "") return;
-      let messages = JSON.parse(localStorage.getItem("chatMessages"));
-      messages.push({ sender: sessionId, text: text, timestamp: new Date().getTime() });
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
+      const sender = localStorage.getItem("chatUsername");
+      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
       localStorage.setItem("chatMessages", JSON.stringify(messages));
       chatInput.value = "";
       updateChatLog();
@@ -860,7 +867,6 @@
       if (e.key === "Enter") sendMessage();
     });
     document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    // Listen for storage events to update chat log in real time
     window.addEventListener("storage", (e) => {
       if (e.key === "chatMessages") {
         updateChatLog();
