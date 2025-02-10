@@ -26,7 +26,7 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       z-index: 1;
       pointer-events: none;
@@ -44,9 +44,9 @@
     /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       background: rgba(0, 0, 0, 0.9);
       display: flex;
@@ -169,9 +169,7 @@
       display: block;
     }
     /* --- Terminal Tab Content (with command parser) --- */
-    #terminalTab {
-      /* Additional styling as needed */
-    }
+    #terminalTab { }
     #terminalOutput {
       width: 100%;
       height: 300px;
@@ -426,12 +424,12 @@
     });
 
     /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with own GUI)
+     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
     const terminalOutput = document.getElementById("terminalOutput");
     const terminalCommand = document.getElementById("terminalCommand");
 
-    // Define an array of command objects with descriptions
+    // Add our new command "chome" to the command list.
     const commandList = [
       { cmd: "help", desc: "Displays this help list." },
       { cmd: "clear", desc: "Clears the terminal." },
@@ -482,14 +480,16 @@
       { cmd: "browsers", desc: "Lists installed browsers." },
       { cmd: "games", desc: "Lists available games." },
       { cmd: "about", desc: "Displays program information." },
-      { cmd: "version", desc: "Shows the system version." }
+      { cmd: "version", desc: "Shows the system version." },
+      // New command "chome" added below:
+      { cmd: "chome", desc: "Makes a copy of Microsoft Edge (simulation)." }
     ];
 
     terminalCommand.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // Instead of appending to terminal output, open the command GUI modal.
+        // Open the command modal with the command's output
         openCommandModal(command, processCommand(command));
       }
     });
@@ -616,7 +616,7 @@
           break;
         case "fizzbuzz":
           let fb = "";
-          for(let i=1; i<=15; i++){
+          for(let i = 1; i <= 15; i++){
             if(i % 15 === 0) fb += "FizzBuzz ";
             else if(i % 3 === 0) fb += "Fizz ";
             else if(i % 5 === 0) fb += "Buzz ";
@@ -676,6 +676,10 @@
           break;
         case "version":
           output = "Version: 1.0.0 (simulation).";
+          break;
+        case "chome":
+          // New command: simulate copying Microsoft Edge.
+          output = "Copying Microsoft Edge... Duplicate instance created successfully!";
           break;
         default:
           output = "Unknown command: " + cmd;
