@@ -365,7 +365,7 @@
   <!-- Chat Box Modal (for "msg" command) -->
   <div id="chatBox">
     <h2>Chat Box</h2>
-    <div id="onlineUsers" style="font-size: 14px; margin-bottom: 5px;"></div>
+    <div id="onlineUsers"></div>
     <div id="chatLog"></div>
     <input type="text" id="chatInput" placeholder="Type your message">
     <button id="chatSend">Send</button>
@@ -502,1383 +502,6 @@
     /*************************************************
      * CHAT BOX FUNCTIONS (for "msg" command)
      *************************************************/
-    // Chat active status functions
-    let chatActiveInterval = null;
-    function startChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-      chatActiveInterval = setInterval(() => {
-         let username = localStorage.getItem("chatUsername");
-         if (username) {
-              localStorage.setItem("chatActive_" + username, Date.now());
-              updateOnlineUsers();
-         }
-      }, 5000);
-    }
-    function stopChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-    }
-    function updateOnlineUsers() {
-      const onlineUsersElem = document.getElementById("onlineUsers");
-      let onlineUsers = [];
-      const now = Date.now();
-      for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        if (key.startsWith("chatActive_")) {
-          let ts = parseInt(localStorage.getItem(key));
-          if (now - ts < 30000) { // active in last 30 sec
-            let user = key.substring("chatActive_".length);
-            if (user !== localStorage.getItem("chatUsername")) {
-              onlineUsers.push(user);
-            }
-          }
-        }
-      }
-      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
-    }
-    function openChatBox() {
-      let username = localStorage.getItem("chatUsername");
-      if (!username) {
-        username = prompt("Enter your chat username:");
-        if (!username) {
-          alert("A username is required to use chat.");
-          return;
-        }
-        localStorage.setItem("chatUsername", username);
-      }
-      document.getElementById("chatBox").style.display = "block";
-      updateChatLog();
-      startChatActiveStatus();
-    }
-    function closeChatBox() {
-      document.getElementById("chatBox").style.display = "none";
-      stopChatActiveStatus();
-    }
-    function updateChatLog() {
-      const chatLog = document.getElementById("chatLog");
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      chatLog.innerHTML = "";
-      messages.forEach(msg => {
-        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
-      });
-      chatLog.scrollTop = chatLog.scrollHeight;
-      updateOnlineUsers();
-    }
-    function sendMessage() {
-      const chatInput = document.getElementById("chatInput");
-      const text = chatInput.value.trim();
-      if (text === "") return;
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      const sender = localStorage.getItem("chatUsername");
-      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
-      localStorage.setItem("chatMessages", JSON.stringify(messages));
-      chatInput.value = "";
-      updateChatLog();
-    }
-    document.getElementById("chatSend").addEventListener("click", sendMessage);
-    document.getElementById("chatInput").addEventListener("keyup", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-    document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    window.addEventListener("storage", (e) => {
-      if (e.key === "chatMessages") {
-        updateChatLog();
-      }
-    });
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
-     *************************************************/
-    const terminalOutput = document.getElementById("terminalOutput");
-    const terminalCommand = document.getElementById("terminalCommand");
-
-    // Define an array of command objects with descriptions
-    const commandList = [
-      { cmd: "help", desc: "Displays this help list." },
-      { cmd: "clear", desc: "Clears the terminal." },
-      { cmd: "status", desc: "Shows system status." },
-      { cmd: "date", desc: "Displays the current date/time." },
-      { cmd: "ipconfig", desc: "Shows network configuration." },
-      { cmd: "ping [address]", desc: "Simulates pinging an address." },
-      { cmd: "listall", desc: "Lists all available commands." },
-      { cmd: "calc", desc: "A simple calculator (not implemented)." },
-      { cmd: "fortune", desc: "Displays a random fortune." },
-      { cmd: "weather", desc: "Shows cyberspace weather info." },
-      { cmd: "uptime", desc: "Displays system uptime." },
-      { cmd: "shutdown", desc: "Simulates a system shutdown." },
-      { cmd: "reboot", desc: "Simulates a system reboot." },
-      { cmd: "whoami", desc: "Displays user identity." },
-      { cmd: "time", desc: "Displays the current time." },
-      { cmd: "echo [text]", desc: "Echoes the provided text." },
-      { cmd: "reverse [text]", desc: "Reverses the provided text." },
-      { cmd: "ascii", desc: "Displays an ASCII art." },
-      { cmd: "virus", desc: "Simulates a virus scan." },
-      { cmd: "encrypt [text]", desc: "Encrypts the text (simple reversal)." },
-      { cmd: "decrypt [text]", desc: "Decrypts the text (simple reversal)." },
-      { cmd: "locate [file]", desc: "Searches for a file." },
-      { cmd: "find [query]", desc: "Searches for a query." },
-      { cmd: "traceroute [address]", desc: "Simulates a traceroute." },
-      { cmd: "netstat", desc: "Displays network statistics." },
-      { cmd: "diskusage", desc: "Shows disk usage." },
-      { cmd: "meminfo", desc: "Displays memory info." },
-      { cmd: "cpu", desc: "Displays CPU information." },
-      { cmd: "battery", desc: "Shows battery status." },
-      { cmd: "browse [url]", desc: "Opens the URL in a new window." },
-      { cmd: "note [text]", desc: "Saves a note." },
-      { cmd: "calcpi", desc: "Displays an approximation of Pi." },
-      { cmd: "fizzbuzz", desc: "Runs a fizzbuzz simulation." },
-      { cmd: "joke", desc: "Tells a joke." },
-      { cmd: "quote", desc: "Displays a famous quote." },
-      { cmd: "hack", desc: "Simulates a hack." },
-      { cmd: "scan", desc: "Scans for vulnerabilities." },
-      { cmd: "connect [address]", desc: "Simulates connecting to an address." },
-      { cmd: "disconnect", desc: "Simulates disconnecting." },
-      { cmd: "log", desc: "Displays a system log." },
-      { cmd: "config", desc: "Shows configuration settings." },
-      { cmd: "userinfo", desc: "Displays user information." },
-      { cmd: "systeminfo", desc: "Shows system information." },
-      { cmd: "processes", desc: "Lists running processes." },
-      { cmd: "ports", desc: "Displays open ports." },
-      { cmd: "services", desc: "Lists running services." },
-      { cmd: "browsers", desc: "Lists installed browsers." },
-      { cmd: "games", desc: "Lists available games." },
-      { cmd: "about", desc: "Displays program information." },
-      { cmd: "version", desc: "Shows the system version." },
-      { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a working search bar)." },
-      { cmd: "msg", desc: "Opens a chat box for multi-user chat (requires a username)." }
-    ];
-
-    terminalCommand.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        const command = terminalCommand.value.trim();
-        terminalCommand.value = "";
-        // If command is "chome", open Edge via protocol handler.
-        if (command.toLowerCase() === "chome") {
-          openEdgeCopy();
-          return;
-        }
-        // If command is "msg", open the chat box.
-        if (command.toLowerCase() === "msg") {
-          openChatBox();
-          return;
-        }
-        // Otherwise, open the command modal with the command output.
-        openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // The processCommand function returns a string output for the command.
-    function processCommand(cmd) {
-      const parts = cmd.split(" ");
-      const baseCommand = parts[0].toLowerCase();
-      const args = parts.slice(1).join(" ");
-      let output = "";
-      switch(baseCommand) {
-        case "help":
-          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
-          break;
-        case "clear":
-          output = "Terminal cleared (simulation).";
-          break;
-        case "status":
-          output = "System status: All systems nominal.";
-          break;
-        case "date":
-          output = "Current date/time: " + new Date().toString();
-          break;
-        case "ipconfig":
-          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
-          break;
-        case "ping":
-          if(args.length === 0) {
-            output = "Usage: ping [address]";
-          } else {
-            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
-          }
-          break;
-        case "listall":
-          let listText = "";
-          commandList.forEach((cmdObj, index) => {
-            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
-          });
-          let win = window.open("", "_blank", "width=600,height=800");
-          win.document.write("<pre>" + listText + "</pre>");
-          output = "Opened command list in a new window.";
-          break;
-        case "calc":
-          output = "Calculator: Not implemented yet.";
-          break;
-        case "fortune":
-          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          output = fortunes[Math.floor(Math.random() * fortunes.length)];
-          break;
-        case "weather":
-          output = "The weather is always cloudy in cyberspace.";
-          break;
-        case "uptime":
-          output = "System uptime: 42 days, 3 hours, 17 minutes.";
-          break;
-        case "shutdown":
-          output = "Shutdown initiated... (simulation)";
-          break;
-        case "reboot":
-          output = "Rebooting system... (simulation)";
-          break;
-        case "whoami":
-          output = "You are: hacker.";
-          break;
-        case "time":
-          output = "Current time: " + new Date().toLocaleTimeString();
-          break;
-        case "echo":
-          output = args;
-          break;
-        case "reverse":
-          output = args.split("").reverse().join("");
-          break;
-        case "ascii":
-          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
-          break;
-        case "virus":
-          output = "Virus scan complete: No viruses found.";
-          break;
-        case "encrypt":
-          output = "Encrypted: " + args.split("").reverse().join("");
-          break;
-        case "decrypt":
-          output = "Decrypted: " + args.split("").reverse().join("");
-          break;
-        case "locate":
-          output = "File " + args + " not found.";
-          break;
-        case "find":
-          output = "No results found for \"" + args + "\".";
-          break;
-        case "traceroute":
-          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
-          break;
-        case "netstat":
-          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
-          break;
-        case "diskusage":
-          output = "Disk Usage: 45% used of 500GB.";
-          break;
-        case "meminfo":
-          output = "Memory Info: 8GB RAM, 3.2GB used.";
-          break;
-        case "cpu":
-          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
-          break;
-        case "battery":
-          output = "Battery: 85% charged (simulation).";
-          break;
-        case "browse":
-          if(args.length === 0) {
-            output = "Usage: browse [url]";
-          } else {
-            output = "Opening " + args + " in a new window...";
-            window.open(args, "_blank");
-          }
-          break;
-        case "note":
-          output = "Note saved: " + args;
-          break;
-        case "calcpi":
-          output = "Pi ≈ 3.14159";
-          break;
-        case "fizzbuzz":
-          let fb = "";
-          for(let i = 1; i <= 15; i++){
-            if(i % 15 === 0) fb += "FizzBuzz ";
-            else if(i % 3 === 0) fb += "Fizz ";
-            else if(i % 5 === 0) fb += "Buzz ";
-            else fb += i + " ";
-          }
-          output = fb;
-          break;
-        case "joke":
-          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          output = jokes[Math.floor(Math.random() * jokes.length)];
-          break;
-        case "quote":
-          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          output = quotes[Math.floor(Math.random() * quotes.length)];
-          break;
-        case "hack":
-          output = "Hacking in progress... Access granted.";
-          break;
-        case "scan":
-          output = "Scanning network... No vulnerabilities found.";
-          break;
-        case "connect":
-          output = "Connecting to " + args + "... Connection established.";
-          break;
-        case "disconnect":
-          output = "Disconnected from network.";
-          break;
-        case "log":
-          output = "Log: All systems operational.";
-          break;
-        case "config":
-          output = "Configuration: Default settings loaded.";
-          break;
-        case "userinfo":
-          output = "User: hacker<br>Role: Administrator";
-          break;
-        case "systeminfo":
-          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
-          break;
-        case "processes":
-          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
-          break;
-        case "ports":
-          output = "Open ports: 80, 443, 22.";
-          break;
-        case "services":
-          output = "Services: Apache, MySQL, SSH.";
-          break;
-        case "browsers":
-          output = "Installed browsers: Chrome, Firefox, Edge.";
-          break;
-        case "games":
-          output = "Available games: Guess the Number, Hacker Hangman.";
-          break;
-        case "about":
-          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
-          break;
-        case "version":
-          output = "Version: 1.0.0 (simulation).";
-          break;
-        case "chome":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        case "msg":
-          // Handled below.
-          output = "";
-          break;
-        default:
-          output = "Unknown command: " + cmd;
-          break;
-      }
-      return output;
-    }
-
-    /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
-     *************************************************/
-    function openEdgeCopy() {
-      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
-      window.open("microsoft-edge:https://www.bing.com", "_blank");
-    }
-
-    /*************************************************
-     * CHAT BOX FUNCTIONS (for "msg" command)
-     *************************************************/
-    // Chat active status functions
-    let chatActiveInterval = null;
-    function startChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-      chatActiveInterval = setInterval(() => {
-         let username = localStorage.getItem("chatUsername");
-         if (username) {
-              localStorage.setItem("chatActive_" + username, Date.now());
-              updateOnlineUsers();
-         }
-      }, 5000);
-    }
-    function stopChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-    }
-    function updateOnlineUsers() {
-      const onlineUsersElem = document.getElementById("onlineUsers");
-      let onlineUsers = [];
-      const now = Date.now();
-      for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        if (key.startsWith("chatActive_")) {
-          let ts = parseInt(localStorage.getItem(key));
-          if (now - ts < 30000) { // active in last 30 seconds
-            let user = key.substring("chatActive_".length);
-            if (user !== localStorage.getItem("chatUsername")) {
-              onlineUsers.push(user);
-            }
-          }
-        }
-      }
-      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
-    }
-    function openChatBox() {
-      let username = localStorage.getItem("chatUsername");
-      if (!username) {
-        username = prompt("Enter your chat username:");
-        if (!username) {
-          alert("A username is required to use chat.");
-          return;
-        }
-        localStorage.setItem("chatUsername", username);
-      }
-      document.getElementById("chatBox").style.display = "block";
-      updateChatLog();
-      startChatActiveStatus();
-    }
-    function closeChatBox() {
-      document.getElementById("chatBox").style.display = "none";
-      stopChatActiveStatus();
-    }
-    function updateChatLog() {
-      const chatLog = document.getElementById("chatLog");
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      chatLog.innerHTML = "";
-      messages.forEach(msg => {
-        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
-      });
-      chatLog.scrollTop = chatLog.scrollHeight;
-      updateOnlineUsers();
-    }
-    function sendMessage() {
-      const chatInput = document.getElementById("chatInput");
-      const text = chatInput.value.trim();
-      if (text === "") return;
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      const sender = localStorage.getItem("chatUsername");
-      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
-      localStorage.setItem("chatMessages", JSON.stringify(messages));
-      chatInput.value = "";
-      updateChatLog();
-    }
-    document.getElementById("chatSend").addEventListener("click", sendMessage);
-    document.getElementById("chatInput").addEventListener("keyup", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-    document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    window.addEventListener("storage", (e) => {
-      if (e.key === "chatMessages") {
-        updateChatLog();
-      }
-    });
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
-     *************************************************/
-    const terminalOutput = document.getElementById("terminalOutput");
-    const terminalCommand = document.getElementById("terminalCommand");
-
-    // Define an array of command objects with descriptions
-    const commandList = [
-      { cmd: "help", desc: "Displays this help list." },
-      { cmd: "clear", desc: "Clears the terminal." },
-      { cmd: "status", desc: "Shows system status." },
-      { cmd: "date", desc: "Displays the current date/time." },
-      { cmd: "ipconfig", desc: "Shows network configuration." },
-      { cmd: "ping [address]", desc: "Simulates pinging an address." },
-      { cmd: "listall", desc: "Lists all available commands." },
-      { cmd: "calc", desc: "A simple calculator (not implemented)." },
-      { cmd: "fortune", desc: "Displays a random fortune." },
-      { cmd: "weather", desc: "Shows cyberspace weather info." },
-      { cmd: "uptime", desc: "Displays system uptime." },
-      { cmd: "shutdown", desc: "Simulates a system shutdown." },
-      { cmd: "reboot", desc: "Simulates a system reboot." },
-      { cmd: "whoami", desc: "Displays user identity." },
-      { cmd: "time", desc: "Displays the current time." },
-      { cmd: "echo [text]", desc: "Echoes the provided text." },
-      { cmd: "reverse [text]", desc: "Reverses the provided text." },
-      { cmd: "ascii", desc: "Displays an ASCII art." },
-      { cmd: "virus", desc: "Simulates a virus scan." },
-      { cmd: "encrypt [text]", desc: "Encrypts the text (simple reversal)." },
-      { cmd: "decrypt [text]", desc: "Decrypts the text (simple reversal)." },
-      { cmd: "locate [file]", desc: "Searches for a file." },
-      { cmd: "find [query]", desc: "Searches for a query." },
-      { cmd: "traceroute [address]", desc: "Simulates a traceroute." },
-      { cmd: "netstat", desc: "Displays network statistics." },
-      { cmd: "diskusage", desc: "Shows disk usage." },
-      { cmd: "meminfo", desc: "Displays memory info." },
-      { cmd: "cpu", desc: "Displays CPU information." },
-      { cmd: "battery", desc: "Shows battery status." },
-      { cmd: "browse [url]", desc: "Opens the URL in a new window." },
-      { cmd: "note [text]", desc: "Saves a note." },
-      { cmd: "calcpi", desc: "Displays an approximation of Pi." },
-      { cmd: "fizzbuzz", desc: "Runs a fizzbuzz simulation." },
-      { cmd: "joke", desc: "Tells a joke." },
-      { cmd: "quote", desc: "Displays a famous quote." },
-      { cmd: "hack", desc: "Simulates a hack." },
-      { cmd: "scan", desc: "Scans for vulnerabilities." },
-      { cmd: "connect [address]", desc: "Simulates connecting to an address." },
-      { cmd: "disconnect", desc: "Simulates disconnecting." },
-      { cmd: "log", desc: "Displays a system log." },
-      { cmd: "config", desc: "Shows configuration settings." },
-      { cmd: "userinfo", desc: "Displays user information." },
-      { cmd: "systeminfo", desc: "Shows system information." },
-      { cmd: "processes", desc: "Lists running processes." },
-      { cmd: "ports", desc: "Displays open ports." },
-      { cmd: "services", desc: "Lists running services." },
-      { cmd: "browsers", desc: "Lists installed browsers." },
-      { cmd: "games", desc: "Lists available games." },
-      { cmd: "about", desc: "Displays program information." },
-      { cmd: "version", desc: "Shows the system version." },
-      { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a working search bar)." },
-      { cmd: "msg", desc: "Opens a chat box for multi-user chat (requires a username)." }
-    ];
-
-    terminalCommand.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        const command = terminalCommand.value.trim();
-        terminalCommand.value = "";
-        // If command is "chome", open Edge via protocol handler.
-        if (command.toLowerCase() === "chome") {
-          openEdgeCopy();
-          return;
-        }
-        // If command is "msg", open the chat box.
-        if (command.toLowerCase() === "msg") {
-          openChatBox();
-          return;
-        }
-        // Otherwise, open the command modal with the command output.
-        openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // The processCommand function returns a string output for the command.
-    function processCommand(cmd) {
-      const parts = cmd.split(" ");
-      const baseCommand = parts[0].toLowerCase();
-      const args = parts.slice(1).join(" ");
-      let output = "";
-      switch(baseCommand) {
-        case "help":
-          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
-          break;
-        case "clear":
-          output = "Terminal cleared (simulation).";
-          break;
-        case "status":
-          output = "System status: All systems nominal.";
-          break;
-        case "date":
-          output = "Current date/time: " + new Date().toString();
-          break;
-        case "ipconfig":
-          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
-          break;
-        case "ping":
-          if(args.length === 0) {
-            output = "Usage: ping [address]";
-          } else {
-            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
-          }
-          break;
-        case "listall":
-          let listText = "";
-          commandList.forEach((cmdObj, index) => {
-            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
-          });
-          let win = window.open("", "_blank", "width=600,height=800");
-          win.document.write("<pre>" + listText + "</pre>");
-          output = "Opened command list in a new window.";
-          break;
-        case "calc":
-          output = "Calculator: Not implemented yet.";
-          break;
-        case "fortune":
-          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          output = fortunes[Math.floor(Math.random() * fortunes.length)];
-          break;
-        case "weather":
-          output = "The weather is always cloudy in cyberspace.";
-          break;
-        case "uptime":
-          output = "System uptime: 42 days, 3 hours, 17 minutes.";
-          break;
-        case "shutdown":
-          output = "Shutdown initiated... (simulation)";
-          break;
-        case "reboot":
-          output = "Rebooting system... (simulation)";
-          break;
-        case "whoami":
-          output = "You are: hacker.";
-          break;
-        case "time":
-          output = "Current time: " + new Date().toLocaleTimeString();
-          break;
-        case "echo":
-          output = args;
-          break;
-        case "reverse":
-          output = args.split("").reverse().join("");
-          break;
-        case "ascii":
-          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
-          break;
-        case "virus":
-          output = "Virus scan complete: No viruses found.";
-          break;
-        case "encrypt":
-          output = "Encrypted: " + args.split("").reverse().join("");
-          break;
-        case "decrypt":
-          output = "Decrypted: " + args.split("").reverse().join("");
-          break;
-        case "locate":
-          output = "File " + args + " not found.";
-          break;
-        case "find":
-          output = "No results found for \"" + args + "\".";
-          break;
-        case "traceroute":
-          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
-          break;
-        case "netstat":
-          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
-          break;
-        case "diskusage":
-          output = "Disk Usage: 45% used of 500GB.";
-          break;
-        case "meminfo":
-          output = "Memory Info: 8GB RAM, 3.2GB used.";
-          break;
-        case "cpu":
-          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
-          break;
-        case "battery":
-          output = "Battery: 85% charged (simulation).";
-          break;
-        case "browse":
-          if(args.length === 0) {
-            output = "Usage: browse [url]";
-          } else {
-            output = "Opening " + args + " in a new window...";
-            window.open(args, "_blank");
-          }
-          break;
-        case "note":
-          output = "Note saved: " + args;
-          break;
-        case "calcpi":
-          output = "Pi ≈ 3.14159";
-          break;
-        case "fizzbuzz":
-          let fb = "";
-          for(let i = 1; i <= 15; i++){
-            if(i % 15 === 0) fb += "FizzBuzz ";
-            else if(i % 3 === 0) fb += "Fizz ";
-            else if(i % 5 === 0) fb += "Buzz ";
-            else fb += i + " ";
-          }
-          output = fb;
-          break;
-        case "joke":
-          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          output = jokes[Math.floor(Math.random() * jokes.length)];
-          break;
-        case "quote":
-          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          output = quotes[Math.floor(Math.random() * quotes.length)];
-          break;
-        case "hack":
-          output = "Hacking in progress... Access granted.";
-          break;
-        case "scan":
-          output = "Scanning network... No vulnerabilities found.";
-          break;
-        case "connect":
-          output = "Connecting to " + args + "... Connection established.";
-          break;
-        case "disconnect":
-          output = "Disconnected from network.";
-          break;
-        case "log":
-          output = "Log: All systems operational.";
-          break;
-        case "config":
-          output = "Configuration: Default settings loaded.";
-          break;
-        case "userinfo":
-          output = "User: hacker<br>Role: Administrator";
-          break;
-        case "systeminfo":
-          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
-          break;
-        case "processes":
-          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
-          break;
-        case "ports":
-          output = "Open ports: 80, 443, 22.";
-          break;
-        case "services":
-          output = "Services: Apache, MySQL, SSH.";
-          break;
-        case "browsers":
-          output = "Installed browsers: Chrome, Firefox, Edge.";
-          break;
-        case "games":
-          output = "Available games: Guess the Number, Hacker Hangman.";
-          break;
-        case "about":
-          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
-          break;
-        case "version":
-          output = "Version: 1.0.0 (simulation).";
-          break;
-        case "chome":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        case "msg":
-          // Handled in the event listener.
-          output = "";
-          break;
-        default:
-          output = "Unknown command: " + cmd;
-          break;
-      }
-      return output;
-    }
-
-    /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
-     *************************************************/
-    function openEdgeCopy() {
-      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
-      window.open("microsoft-edge:https://www.bing.com", "_blank");
-    }
-
-    /*************************************************
-     * CHAT BOX FUNCTIONS (for "msg" command)
-     *************************************************/
-    let chatActiveInterval = null;
-    function startChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-      chatActiveInterval = setInterval(() => {
-         let username = localStorage.getItem("chatUsername");
-         if (username) {
-              localStorage.setItem("chatActive_" + username, Date.now());
-              updateOnlineUsers();
-         }
-      }, 5000);
-    }
-    function stopChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-    }
-    function updateOnlineUsers() {
-      const onlineUsersElem = document.getElementById("onlineUsers");
-      let onlineUsers = [];
-      const now = Date.now();
-      for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        if (key.startsWith("chatActive_")) {
-          let ts = parseInt(localStorage.getItem(key));
-          if (now - ts < 30000) { // active within last 30 sec
-            let user = key.substring("chatActive_".length);
-            if (user !== localStorage.getItem("chatUsername")) {
-              onlineUsers.push(user);
-            }
-          }
-        }
-      }
-      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
-    }
-    function openChatBox() {
-      let username = localStorage.getItem("chatUsername");
-      if (!username) {
-        username = prompt("Enter your chat username:");
-        if (!username) {
-          alert("A username is required to use chat.");
-          return;
-        }
-        localStorage.setItem("chatUsername", username);
-      }
-      document.getElementById("chatBox").style.display = "block";
-      updateChatLog();
-      startChatActiveStatus();
-    }
-    function closeChatBox() {
-      document.getElementById("chatBox").style.display = "none";
-      stopChatActiveStatus();
-    }
-    function updateChatLog() {
-      const chatLog = document.getElementById("chatLog");
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      chatLog.innerHTML = "";
-      messages.forEach(msg => {
-        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
-      });
-      chatLog.scrollTop = chatLog.scrollHeight;
-      updateOnlineUsers();
-    }
-    function sendMessage() {
-      const chatInput = document.getElementById("chatInput");
-      const text = chatInput.value.trim();
-      if (text === "") return;
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      const sender = localStorage.getItem("chatUsername");
-      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
-      localStorage.setItem("chatMessages", JSON.stringify(messages));
-      chatInput.value = "";
-      updateChatLog();
-    }
-    document.getElementById("chatSend").addEventListener("click", sendMessage);
-    document.getElementById("chatInput").addEventListener("keyup", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-    document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    window.addEventListener("storage", (e) => {
-      if (e.key === "chatMessages") {
-        updateChatLog();
-      }
-    });
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
-     *************************************************/
-    const terminalOutput = document.getElementById("terminalOutput");
-    const terminalCommand = document.getElementById("terminalCommand");
-
-    terminalCommand.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        const command = terminalCommand.value.trim();
-        terminalCommand.value = "";
-        // If command is "chome", open Edge via protocol handler.
-        if (command.toLowerCase() === "chome") {
-          openEdgeCopy();
-          return;
-        }
-        // If command is "msg", open the chat box.
-        if (command.toLowerCase() === "msg") {
-          openChatBox();
-          return;
-        }
-        // Otherwise, open the command modal with the command output.
-        openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // The processCommand function returns a string output for the command.
-    function processCommand(cmd) {
-      const parts = cmd.split(" ");
-      const baseCommand = parts[0].toLowerCase();
-      const args = parts.slice(1).join(" ");
-      let output = "";
-      switch(baseCommand) {
-        case "help":
-          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
-          break;
-        case "clear":
-          output = "Terminal cleared (simulation).";
-          break;
-        case "status":
-          output = "System status: All systems nominal.";
-          break;
-        case "date":
-          output = "Current date/time: " + new Date().toString();
-          break;
-        case "ipconfig":
-          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
-          break;
-        case "ping":
-          if(args.length === 0) {
-            output = "Usage: ping [address]";
-          } else {
-            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
-          }
-          break;
-        case "listall":
-          let listText = "";
-          commandList.forEach((cmdObj, index) => {
-            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
-          });
-          let win = window.open("", "_blank", "width=600,height=800");
-          win.document.write("<pre>" + listText + "</pre>");
-          output = "Opened command list in a new window.";
-          break;
-        case "calc":
-          output = "Calculator: Not implemented yet.";
-          break;
-        case "fortune":
-          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          output = fortunes[Math.floor(Math.random() * fortunes.length)];
-          break;
-        case "weather":
-          output = "The weather is always cloudy in cyberspace.";
-          break;
-        case "uptime":
-          output = "System uptime: 42 days, 3 hours, 17 minutes.";
-          break;
-        case "shutdown":
-          output = "Shutdown initiated... (simulation)";
-          break;
-        case "reboot":
-          output = "Rebooting system... (simulation)";
-          break;
-        case "whoami":
-          output = "You are: hacker.";
-          break;
-        case "time":
-          output = "Current time: " + new Date().toLocaleTimeString();
-          break;
-        case "echo":
-          output = args;
-          break;
-        case "reverse":
-          output = args.split("").reverse().join("");
-          break;
-        case "ascii":
-          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
-          break;
-        case "virus":
-          output = "Virus scan complete: No viruses found.";
-          break;
-        case "encrypt":
-          output = "Encrypted: " + args.split("").reverse().join("");
-          break;
-        case "decrypt":
-          output = "Decrypted: " + args.split("").reverse().join("");
-          break;
-        case "locate":
-          output = "File " + args + " not found.";
-          break;
-        case "find":
-          output = "No results found for \"" + args + "\".";
-          break;
-        case "traceroute":
-          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
-          break;
-        case "netstat":
-          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
-          break;
-        case "diskusage":
-          output = "Disk Usage: 45% used of 500GB.";
-          break;
-        case "meminfo":
-          output = "Memory Info: 8GB RAM, 3.2GB used.";
-          break;
-        case "cpu":
-          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
-          break;
-        case "battery":
-          output = "Battery: 85% charged (simulation).";
-          break;
-        case "browse":
-          if(args.length === 0) {
-            output = "Usage: browse [url]";
-          } else {
-            output = "Opening " + args + " in a new window...";
-            window.open(args, "_blank");
-          }
-          break;
-        case "note":
-          output = "Note saved: " + args;
-          break;
-        case "calcpi":
-          output = "Pi ≈ 3.14159";
-          break;
-        case "fizzbuzz":
-          let fb = "";
-          for(let i = 1; i <= 15; i++){
-            if(i % 15 === 0) fb += "FizzBuzz ";
-            else if(i % 3 === 0) fb += "Fizz ";
-            else if(i % 5 === 0) fb += "Buzz ";
-            else fb += i + " ";
-          }
-          output = fb;
-          break;
-        case "joke":
-          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          output = jokes[Math.floor(Math.random() * jokes.length)];
-          break;
-        case "quote":
-          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          output = quotes[Math.floor(Math.random() * quotes.length)];
-          break;
-        case "hack":
-          output = "Hacking in progress... Access granted.";
-          break;
-        case "scan":
-          output = "Scanning network... No vulnerabilities found.";
-          break;
-        case "connect":
-          output = "Connecting to " + args + "... Connection established.";
-          break;
-        case "disconnect":
-          output = "Disconnected from network.";
-          break;
-        case "log":
-          output = "Log: All systems operational.";
-          break;
-        case "config":
-          output = "Configuration: Default settings loaded.";
-          break;
-        case "userinfo":
-          output = "User: hacker<br>Role: Administrator";
-          break;
-        case "systeminfo":
-          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
-          break;
-        case "processes":
-          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
-          break;
-        case "ports":
-          output = "Open ports: 80, 443, 22.";
-          break;
-        case "services":
-          output = "Services: Apache, MySQL, SSH.";
-          break;
-        case "browsers":
-          output = "Installed browsers: Chrome, Firefox, Edge.";
-          break;
-        case "games":
-          output = "Available games: Guess the Number, Hacker Hangman.";
-          break;
-        case "about":
-          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
-          break;
-        case "version":
-          output = "Version: 1.0.0 (simulation).";
-          break;
-        case "chome":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        case "msg":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        default:
-          output = "Unknown command: " + cmd;
-          break;
-      }
-      return output;
-    }
-
-    /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
-     *************************************************/
-    function openEdgeCopy() {
-      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
-      window.open("microsoft-edge:https://www.bing.com", "_blank");
-    }
-
-    /*************************************************
-     * CHAT BOX FUNCTIONS (for "msg" command)
-     *************************************************/
-    let chatActiveInterval = null;
-    function startChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-      chatActiveInterval = setInterval(() => {
-         let username = localStorage.getItem("chatUsername");
-         if (username) {
-              localStorage.setItem("chatActive_" + username, Date.now());
-              updateOnlineUsers();
-         }
-      }, 5000);
-    }
-    function stopChatActiveStatus() {
-      if (chatActiveInterval) clearInterval(chatActiveInterval);
-    }
-    function updateOnlineUsers() {
-      const onlineUsersElem = document.getElementById("onlineUsers");
-      let onlineUsers = [];
-      const now = Date.now();
-      for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        if (key.startsWith("chatActive_")) {
-          let ts = parseInt(localStorage.getItem(key));
-          if (now - ts < 30000) { // active within last 30 sec
-            let user = key.substring("chatActive_".length);
-            if (user !== localStorage.getItem("chatUsername")) {
-              onlineUsers.push(user);
-            }
-          }
-        }
-      }
-      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
-    }
-    function openChatBox() {
-      let username = localStorage.getItem("chatUsername");
-      if (!username) {
-        username = prompt("Enter your chat username:");
-        if (!username) {
-          alert("A username is required to use chat.");
-          return;
-        }
-        localStorage.setItem("chatUsername", username);
-      }
-      document.getElementById("chatBox").style.display = "block";
-      updateChatLog();
-      startChatActiveStatus();
-    }
-    function closeChatBox() {
-      document.getElementById("chatBox").style.display = "none";
-      stopChatActiveStatus();
-    }
-    function updateChatLog() {
-      const chatLog = document.getElementById("chatLog");
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      chatLog.innerHTML = "";
-      messages.forEach(msg => {
-        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
-      });
-      chatLog.scrollTop = chatLog.scrollHeight;
-      updateOnlineUsers();
-    }
-    function sendMessage() {
-      const chatInput = document.getElementById("chatInput");
-      const text = chatInput.value.trim();
-      if (text === "") return;
-      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
-      const sender = localStorage.getItem("chatUsername");
-      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
-      localStorage.setItem("chatMessages", JSON.stringify(messages));
-      chatInput.value = "";
-      updateChatLog();
-    }
-    document.getElementById("chatSend").addEventListener("click", sendMessage);
-    document.getElementById("chatInput").addEventListener("keyup", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-    document.getElementById("chatClose").addEventListener("click", closeChatBox);
-    window.addEventListener("storage", (e) => {
-      if (e.key === "chatMessages") {
-        updateChatLog();
-      }
-    });
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
-     *************************************************/
-    terminalCommand.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        const command = terminalCommand.value.trim();
-        terminalCommand.value = "";
-        // If command is "chome", open Edge via protocol handler.
-        if (command.toLowerCase() === "chome") {
-          openEdgeCopy();
-          return;
-        }
-        // If command is "msg", open the chat box.
-        if (command.toLowerCase() === "msg") {
-          openChatBox();
-          return;
-        }
-        // Otherwise, open the command modal with the command output.
-        openCommandModal(command, processCommand(command));
-      }
-    });
-
-    /*************************************************
-     * PROCESS COMMAND FUNCTION
-     *************************************************/
-    function processCommand(cmd) {
-      const parts = cmd.split(" ");
-      const baseCommand = parts[0].toLowerCase();
-      const args = parts.slice(1).join(" ");
-      let output = "";
-      switch(baseCommand) {
-        case "help":
-          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
-          break;
-        case "clear":
-          output = "Terminal cleared (simulation).";
-          break;
-        case "status":
-          output = "System status: All systems nominal.";
-          break;
-        case "date":
-          output = "Current date/time: " + new Date().toString();
-          break;
-        case "ipconfig":
-          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
-          break;
-        case "ping":
-          if(args.length === 0) {
-            output = "Usage: ping [address]";
-          } else {
-            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
-          }
-          break;
-        case "listall":
-          let listText = "";
-          commandList.forEach((cmdObj, index) => {
-            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
-          });
-          let win = window.open("", "_blank", "width=600,height=800");
-          win.document.write("<pre>" + listText + "</pre>");
-          output = "Opened command list in a new window.";
-          break;
-        case "calc":
-          output = "Calculator: Not implemented yet.";
-          break;
-        case "fortune":
-          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          output = fortunes[Math.floor(Math.random() * fortunes.length)];
-          break;
-        case "weather":
-          output = "The weather is always cloudy in cyberspace.";
-          break;
-        case "uptime":
-          output = "System uptime: 42 days, 3 hours, 17 minutes.";
-          break;
-        case "shutdown":
-          output = "Shutdown initiated... (simulation)";
-          break;
-        case "reboot":
-          output = "Rebooting system... (simulation)";
-          break;
-        case "whoami":
-          output = "You are: hacker.";
-          break;
-        case "time":
-          output = "Current time: " + new Date().toLocaleTimeString();
-          break;
-        case "echo":
-          output = args;
-          break;
-        case "reverse":
-          output = args.split("").reverse().join("");
-          break;
-        case "ascii":
-          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
-          break;
-        case "virus":
-          output = "Virus scan complete: No viruses found.";
-          break;
-        case "encrypt":
-          output = "Encrypted: " + args.split("").reverse().join("");
-          break;
-        case "decrypt":
-          output = "Decrypted: " + args.split("").reverse().join("");
-          break;
-        case "locate":
-          output = "File " + args + " not found.";
-          break;
-        case "find":
-          output = "No results found for \"" + args + "\".";
-          break;
-        case "traceroute":
-          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
-          break;
-        case "netstat":
-          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
-          break;
-        case "diskusage":
-          output = "Disk Usage: 45% used of 500GB.";
-          break;
-        case "meminfo":
-          output = "Memory Info: 8GB RAM, 3.2GB used.";
-          break;
-        case "cpu":
-          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
-          break;
-        case "battery":
-          output = "Battery: 85% charged (simulation).";
-          break;
-        case "browse":
-          if(args.length === 0) {
-            output = "Usage: browse [url]";
-          } else {
-            output = "Opening " + args + " in a new window...";
-            window.open(args, "_blank");
-          }
-          break;
-        case "note":
-          output = "Note saved: " + args;
-          break;
-        case "calcpi":
-          output = "Pi ≈ 3.14159";
-          break;
-        case "fizzbuzz":
-          let fb = "";
-          for(let i = 1; i <= 15; i++){
-            if(i % 15 === 0) fb += "FizzBuzz ";
-            else if(i % 3 === 0) fb += "Fizz ";
-            else if(i % 5 === 0) fb += "Buzz ";
-            else fb += i + " ";
-          }
-          output = fb;
-          break;
-        case "joke":
-          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          output = jokes[Math.floor(Math.random() * jokes.length)];
-          break;
-        case "quote":
-          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          output = quotes[Math.floor(Math.random() * quotes.length)];
-          break;
-        case "hack":
-          output = "Hacking in progress... Access granted.";
-          break;
-        case "scan":
-          output = "Scanning network... No vulnerabilities found.";
-          break;
-        case "connect":
-          output = "Connecting to " + args + "... Connection established.";
-          break;
-        case "disconnect":
-          output = "Disconnected from network.";
-          break;
-        case "log":
-          output = "Log: All systems operational.";
-          break;
-        case "config":
-          output = "Configuration: Default settings loaded.";
-          break;
-        case "userinfo":
-          output = "User: hacker<br>Role: Administrator";
-          break;
-        case "systeminfo":
-          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
-          break;
-        case "processes":
-          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
-          break;
-        case "ports":
-          output = "Open ports: 80, 443, 22.";
-          break;
-        case "services":
-          output = "Services: Apache, MySQL, SSH.";
-          break;
-        case "browsers":
-          output = "Installed browsers: Chrome, Firefox, Edge.";
-          break;
-        case "games":
-          output = "Available games: Guess the Number, Hacker Hangman.";
-          break;
-        case "about":
-          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
-          break;
-        case "version":
-          output = "Version: 1.0.0 (simulation).";
-          break;
-        case "chome":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        case "msg":
-          // Handled above in the event listener.
-          output = "";
-          break;
-        default:
-          output = "Unknown command: " + cmd;
-          break;
-      }
-      return output;
-    }
-
-    /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
-     *************************************************/
-    function openEdgeCopy() {
-      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
-      window.open("microsoft-edge:https://www.bing.com", "_blank");
-    }
-
-    /*************************************************
-     * CHAT BOX FUNCTIONS (for "msg" command)
-     *************************************************/
     let chatActiveInterval = null;
     function startChatActiveStatus() {
       if (chatActiveInterval) clearInterval(chatActiveInterval);
@@ -1964,6 +587,65 @@
     /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
+    const terminalOutput = document.getElementById("terminalOutput");
+    const terminalCommand = document.getElementById("terminalCommand");
+
+    // Define an array of command objects with descriptions
+    const commandList = [
+      { cmd: "help", desc: "Displays this help list." },
+      { cmd: "clear", desc: "Clears the terminal." },
+      { cmd: "status", desc: "Shows system status." },
+      { cmd: "date", desc: "Displays the current date/time." },
+      { cmd: "ipconfig", desc: "Shows network configuration." },
+      { cmd: "ping [address]", desc: "Simulates pinging an address." },
+      { cmd: "listall", desc: "Lists all available commands." },
+      { cmd: "calc", desc: "A simple calculator (not implemented)." },
+      { cmd: "fortune", desc: "Displays a random fortune." },
+      { cmd: "weather", desc: "Shows cyberspace weather info." },
+      { cmd: "uptime", desc: "Displays system uptime." },
+      { cmd: "shutdown", desc: "Simulates a system shutdown." },
+      { cmd: "reboot", desc: "Simulates a system reboot." },
+      { cmd: "whoami", desc: "Displays user identity." },
+      { cmd: "time", desc: "Displays the current time." },
+      { cmd: "echo [text]", desc: "Echoes the provided text." },
+      { cmd: "reverse [text]", desc: "Reverses the provided text." },
+      { cmd: "ascii", desc: "Displays an ASCII art." },
+      { cmd: "virus", desc: "Simulates a virus scan." },
+      { cmd: "encrypt [text]", desc: "Encrypts the text (simple reversal)." },
+      { cmd: "decrypt [text]", desc: "Decrypts the text (simple reversal)." },
+      { cmd: "locate [file]", desc: "Searches for a file." },
+      { cmd: "find [query]", desc: "Searches for a query." },
+      { cmd: "traceroute [address]", desc: "Simulates a traceroute." },
+      { cmd: "netstat", desc: "Displays network statistics." },
+      { cmd: "diskusage", desc: "Shows disk usage." },
+      { cmd: "meminfo", desc: "Displays memory info." },
+      { cmd: "cpu", desc: "Displays CPU information." },
+      { cmd: "battery", desc: "Shows battery status." },
+      { cmd: "browse [url]", desc: "Opens the URL in a new window." },
+      { cmd: "note [text]", desc: "Saves a note." },
+      { cmd: "calcpi", desc: "Displays an approximation of Pi." },
+      { cmd: "fizzbuzz", desc: "Runs a fizzbuzz simulation." },
+      { cmd: "joke", desc: "Tells a joke." },
+      { cmd: "quote", desc: "Displays a famous quote." },
+      { cmd: "hack", desc: "Simulates a hack." },
+      { cmd: "scan", desc: "Scans for vulnerabilities." },
+      { cmd: "connect [address]", desc: "Simulates connecting to an address." },
+      { cmd: "disconnect", desc: "Simulates disconnecting." },
+      { cmd: "log", desc: "Displays a system log." },
+      { cmd: "config", desc: "Shows configuration settings." },
+      { cmd: "userinfo", desc: "Displays user information." },
+      { cmd: "systeminfo", desc: "Shows system information." },
+      { cmd: "processes", desc: "Lists running processes." },
+      { cmd: "ports", desc: "Displays open ports." },
+      { cmd: "services", desc: "Lists running services." },
+      { cmd: "browsers", desc: "Lists installed browsers." },
+      { cmd: "games", desc: "Lists available games." },
+      { cmd: "about", desc: "Displays program information." },
+      { cmd: "version", desc: "Shows the system version." },
+      { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a working search bar)." },
+      { cmd: "msg", desc: "Opens a chat box for multi-user chat (requires a username)." }
+    ];
+
     terminalCommand.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
@@ -1980,6 +662,757 @@
         }
         // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
+      }
+    });
+
+    // The processCommand function returns a string output for the command.
+    function processCommand(cmd) {
+      const parts = cmd.split(" ");
+      const baseCommand = parts[0].toLowerCase();
+      const args = parts.slice(1).join(" ");
+      let output = "";
+      switch(baseCommand) {
+        case "help":
+          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
+          break;
+        case "clear":
+          output = "Terminal cleared (simulation).";
+          break;
+        case "status":
+          output = "System status: All systems nominal.";
+          break;
+        case "date":
+          output = "Current date/time: " + new Date().toString();
+          break;
+        case "ipconfig":
+          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
+          break;
+        case "ping":
+          if(args.length === 0) {
+            output = "Usage: ping [address]";
+          } else {
+            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
+          }
+          break;
+        case "listall":
+          let listText = "";
+          commandList.forEach((cmdObj, index) => {
+            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
+          });
+          let win = window.open("", "_blank", "width=600,height=800");
+          win.document.write("<pre>" + listText + "</pre>");
+          output = "Opened command list in a new window.";
+          break;
+        case "calc":
+          output = "Calculator: Not implemented yet.";
+          break;
+        case "fortune":
+          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
+          output = fortunes[Math.floor(Math.random() * fortunes.length)];
+          break;
+        case "weather":
+          output = "The weather is always cloudy in cyberspace.";
+          break;
+        case "uptime":
+          output = "System uptime: 42 days, 3 hours, 17 minutes.";
+          break;
+        case "shutdown":
+          output = "Shutdown initiated... (simulation)";
+          break;
+        case "reboot":
+          output = "Rebooting system... (simulation)";
+          break;
+        case "whoami":
+          output = "You are: hacker.";
+          break;
+        case "time":
+          output = "Current time: " + new Date().toLocaleTimeString();
+          break;
+        case "echo":
+          output = args;
+          break;
+        case "reverse":
+          output = args.split("").reverse().join("");
+          break;
+        case "ascii":
+          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
+          break;
+        case "virus":
+          output = "Virus scan complete: No viruses found.";
+          break;
+        case "encrypt":
+          output = "Encrypted: " + args.split("").reverse().join("");
+          break;
+        case "decrypt":
+          output = "Decrypted: " + args.split("").reverse().join("");
+          break;
+        case "locate":
+          output = "File " + args + " not found.";
+          break;
+        case "find":
+          output = "No results found for \"" + args + "\".";
+          break;
+        case "traceroute":
+          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
+          break;
+        case "netstat":
+          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
+          break;
+        case "diskusage":
+          output = "Disk Usage: 45% used of 500GB.";
+          break;
+        case "meminfo":
+          output = "Memory Info: 8GB RAM, 3.2GB used.";
+          break;
+        case "cpu":
+          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
+          break;
+        case "battery":
+          output = "Battery: 85% charged (simulation).";
+          break;
+        case "browse":
+          if(args.length === 0) {
+            output = "Usage: browse [url]";
+          } else {
+            output = "Opening " + args + " in a new window...";
+            window.open(args, "_blank");
+          }
+          break;
+        case "note":
+          output = "Note saved: " + args;
+          break;
+        case "calcpi":
+          output = "Pi ≈ 3.14159";
+          break;
+        case "fizzbuzz":
+          let fb = "";
+          for(let i = 1; i <= 15; i++){
+            if(i % 15 === 0) fb += "FizzBuzz ";
+            else if(i % 3 === 0) fb += "Fizz ";
+            else if(i % 5 === 0) fb += "Buzz ";
+            else fb += i + " ";
+          }
+          output = fb;
+          break;
+        case "joke":
+          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
+          output = jokes[Math.floor(Math.random() * jokes.length)];
+          break;
+        case "quote":
+          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
+          output = quotes[Math.floor(Math.random() * quotes.length)];
+          break;
+        case "hack":
+          output = "Hacking in progress... Access granted.";
+          break;
+        case "scan":
+          output = "Scanning network... No vulnerabilities found.";
+          break;
+        case "connect":
+          output = "Connecting to " + args + "... Connection established.";
+          break;
+        case "disconnect":
+          output = "Disconnected from network.";
+          break;
+        case "log":
+          output = "Log: All systems operational.";
+          break;
+        case "config":
+          output = "Configuration: Default settings loaded.";
+          break;
+        case "userinfo":
+          output = "User: hacker<br>Role: Administrator";
+          break;
+        case "systeminfo":
+          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
+          break;
+        case "processes":
+          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
+          break;
+        case "ports":
+          output = "Open ports: 80, 443, 22.";
+          break;
+        case "services":
+          output = "Services: Apache, MySQL, SSH.";
+          break;
+        case "browsers":
+          output = "Installed browsers: Chrome, Firefox, Edge.";
+          break;
+        case "games":
+          output = "Available games: Guess the Number, Hacker Hangman.";
+          break;
+        case "about":
+          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
+          break;
+        case "version":
+          output = "Version: 1.0.0 (simulation).";
+          break;
+        case "chome":
+          // Handled above in the event listener.
+          output = "";
+          break;
+        case "msg":
+          // Handled above in the event listener.
+          output = "";
+          break;
+        default:
+          output = "Unknown command: " + cmd;
+          break;
+      }
+      return output;
+    }
+
+    /*************************************************
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     *************************************************/
+    function openEdgeCopy() {
+      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
+      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
+      window.open("microsoft-edge:https://www.bing.com", "_blank");
+    }
+
+    /*************************************************
+     * CHAT BOX FUNCTIONS (for "msg" command)
+     *************************************************/
+    function startChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+      chatActiveInterval = setInterval(() => {
+         let username = localStorage.getItem("chatUsername");
+         if (username) {
+              localStorage.setItem("chatActive_" + username, Date.now());
+              updateOnlineUsers();
+         }
+      }, 5000);
+    }
+    function stopChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+    }
+    function updateOnlineUsers() {
+      const onlineUsersElem = document.getElementById("onlineUsers");
+      let onlineUsers = [];
+      const now = Date.now();
+      for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith("chatActive_")) {
+          let ts = parseInt(localStorage.getItem(key));
+          if (now - ts < 30000) { // active within last 30 seconds
+            let user = key.substring("chatActive_".length);
+            if (user !== localStorage.getItem("chatUsername")) {
+              onlineUsers.push(user);
+            }
+          }
+        }
+      }
+      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
+    }
+    function openChatBox() {
+      let username = localStorage.getItem("chatUsername");
+      if (!username) {
+        username = prompt("Enter your chat username:");
+        if (!username) {
+          alert("A username is required to use chat.");
+          return;
+        }
+        localStorage.setItem("chatUsername", username);
+      }
+      document.getElementById("chatBox").style.display = "block";
+      updateChatLog();
+      startChatActiveStatus();
+    }
+    function closeChatBox() {
+      document.getElementById("chatBox").style.display = "none";
+      stopChatActiveStatus();
+    }
+    function updateChatLog() {
+      const chatLog = document.getElementById("chatLog");
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
+      chatLog.innerHTML = "";
+      messages.forEach(msg => {
+        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
+      });
+      chatLog.scrollTop = chatLog.scrollHeight;
+      updateOnlineUsers();
+    }
+    function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const text = chatInput.value.trim();
+      if (text === "") return;
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
+      const sender = localStorage.getItem("chatUsername");
+      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
+      localStorage.setItem("chatMessages", JSON.stringify(messages));
+      chatInput.value = "";
+      updateChatLog();
+    }
+    document.getElementById("chatSend").addEventListener("click", sendMessage);
+    document.getElementById("chatInput").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+    document.getElementById("chatClose").addEventListener("click", closeChatBox);
+    window.addEventListener("storage", (e) => {
+      if (e.key === "chatMessages") {
+        updateChatLog();
+      }
+    });
+
+    /*************************************************
+     * GUESS THE NUMBER GAME LOGIC
+     *************************************************/
+    let randomNumber = Math.floor(Math.random() * 10) + 1;
+    document.getElementById("guessGameButton").addEventListener("click", () => {
+      const guessGame = document.getElementById("guessGame");
+      guessGame.style.display = (guessGame.style.display === "none" || guessGame.style.display === "") ? "block" : "none";
+      randomNumber = Math.floor(Math.random() * 10) + 1;
+      document.getElementById("guessResult").innerText = "";
+      document.getElementById("guessInput").value = "";
+    });
+    document.getElementById("guessButton").addEventListener("click", () => {
+      const guess = parseInt(document.getElementById("guessInput").value);
+      const result = document.getElementById("guessResult");
+      if (guess === randomNumber) {
+        result.innerText = "Correct! You guessed the number.";
+      } else if (guess < randomNumber) {
+        result.innerText = "Too low! Try again.";
+      } else if (guess > randomNumber) {
+        result.innerText = "Too high! Try again.";
+      } else {
+        result.innerText = "Please enter a valid number.";
+      }
+    });
+
+    /*************************************************
+     * HACKER HANGMAN GAME LOGIC
+     *************************************************/
+    let hangmanWord = "";
+    let hangmanDisplay = "";
+    let hangmanWrong = [];
+    let hangmanGuessed = [];
+    const hangmanWords = ["matrix", "cyber", "password", "hacker", "terminal", "encrypt", "firewall", "virus", "debug"];
+    const maxHangmanWrong = 6;
+    document.getElementById("hangmanGameButton").addEventListener("click", () => {
+      const hangmanGame = document.getElementById("hangmanGame");
+      hangmanGame.style.display = (hangmanGame.style.display === "none" || hangmanGame.style.display === "") ? "block" : "none";
+      hangmanWord = hangmanWords[Math.floor(Math.random() * hangmanWords.length)];
+      hangmanWrong = [];
+      hangmanGuessed = [];
+      hangmanDisplay = "";
+      for (let i = 0; i < hangmanWord.length; i++) {
+        hangmanDisplay += "_ ";
+      }
+      document.getElementById("hangmanWord").innerText = hangmanDisplay;
+      document.getElementById("hangmanWrong").innerText = "";
+      document.getElementById("hangmanGuessed").innerText = "";
+      document.getElementById("hangmanResult").innerText = "";
+    });
+    document.getElementById("hangmanGuessButton").addEventListener("click", () => {
+      let letter = document.getElementById("hangmanInput").value.toLowerCase();
+      document.getElementById("hangmanInput").value = "";
+      if (letter.length !== 1 || !letter.match(/[a-z]/)) {
+        alert("Please enter a single letter.");
+        return;
+      }
+      if (hangmanGuessed.includes(letter)) {
+        alert("You already guessed that letter.");
+        return;
+      }
+      hangmanGuessed.push(letter);
+      if (hangmanWord.includes(letter)) {
+        let newDisplay = "";
+        for (let i = 0; i < hangmanWord.length; i++) {
+          if (hangmanGuessed.includes(hangmanWord[i])) {
+            newDisplay += hangmanWord[i] + " ";
+          } else {
+            newDisplay += "_ ";
+          }
+        }
+        hangmanDisplay = newDisplay;
+        document.getElementById("hangmanWord").innerText = hangmanDisplay;
+      } else {
+        hangmanWrong.push(letter);
+        document.getElementById("hangmanWrong").innerText = hangmanWrong.join(", ");
+      }
+      document.getElementById("hangmanGuessed").innerText = hangmanGuessed.join(", ");
+      if (!hangmanDisplay.includes("_")) {
+        document.getElementById("hangmanResult").innerText = "Congratulations! You solved it.";
+      } else if (hangmanWrong.length >= maxHangmanWrong) {
+        document.getElementById("hangmanResult").innerText = "Game Over! The word was: " + hangmanWord;
+      }
+    });
+
+    /*************************************************
+     * ADJUST CANVAS ON WINDOW RESIZE
+     *************************************************/
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    /*************************************************
+     * PASSWORD VERIFICATION & SIMULATION START
+     *************************************************/
+    const passwordError = document.getElementById("passwordError");
+    const passwordOverlay = document.getElementById("passwordOverlay");
+    const passwordInput = document.getElementById("passwordInput");
+    const passwordButton = document.getElementById("passwordButton");
+    const correctPassword = "Mason"; // Standard simulation password
+    passwordButton.addEventListener("click", () => {
+      const entered = passwordInput.value;
+      if (entered === correctPassword) {
+        passwordOverlay.style.display = "none";
+        displayMessages();
+      } else if (entered === "mason") {
+        passwordOverlay.style.display = "none";
+        document.getElementById("tipMessage").style.display = "block";
+      } else if (entered === "Burns") {
+        passwordOverlay.style.display = "none";
+        showHackerGUI();
+      } else {
+        passwordError.style.display = "block";
+      }
+    });
+    // Prevent Enter key from submitting the password
+    passwordInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+      }
+    });
+    document.getElementById("backButton").addEventListener("click", () => {
+      document.getElementById("tipMessage").style.display = "none";
+      passwordOverlay.style.display = "flex";
+      passwordInput.value = "";
+      passwordInput.focus();
+    });
+
+    /*************************************************
+     * HACKER GUI (for "Burns")
+     *************************************************/
+    function showHackerGUI() {
+      document.getElementById("hackerGUI").style.display = "block";
+      showTab("terminalTab");
+    }
+    function showTab(tabId) {
+      const tabs = document.getElementsByClassName("tabContent");
+      for (let tab of tabs) {
+        tab.classList.remove("active");
+      }
+      document.getElementById(tabId).classList.add("active");
+    }
+    const navButtons = document.getElementsByClassName("navButton");
+    for (let btn of navButtons) {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        showTab(target);
+      });
+    }
+
+    /*************************************************
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     *************************************************/
+    function openEdgeCopy() {
+      window.open("microsoft-edge:https://www.bing.com", "_blank");
+    }
+
+    /*************************************************
+     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
+     *************************************************/
+    terminalCommand.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        const command = terminalCommand.value.trim();
+        terminalCommand.value = "";
+        if (command.toLowerCase() === "chome") {
+          openEdgeCopy();
+          return;
+        }
+        if (command.toLowerCase() === "msg") {
+          openChatBox();
+          return;
+        }
+        openCommandModal(command, processCommand(command));
+      }
+    });
+
+    function processCommand(cmd) {
+      const parts = cmd.split(" ");
+      const baseCommand = parts[0].toLowerCase();
+      const args = parts.slice(1).join(" ");
+      let output = "";
+      switch(baseCommand) {
+        case "help":
+          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
+          break;
+        case "clear":
+          output = "Terminal cleared (simulation).";
+          break;
+        case "status":
+          output = "System status: All systems nominal.";
+          break;
+        case "date":
+          output = "Current date/time: " + new Date().toString();
+          break;
+        case "ipconfig":
+          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
+          break;
+        case "ping":
+          if(args.length === 0) {
+            output = "Usage: ping [address]";
+          } else {
+            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
+          }
+          break;
+        case "listall":
+          let listText = "";
+          commandList.forEach((cmdObj, index) => {
+            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
+          });
+          let win = window.open("", "_blank", "width=600,height=800");
+          win.document.write("<pre>" + listText + "</pre>");
+          output = "Opened command list in a new window.";
+          break;
+        case "calc":
+          output = "Calculator: Not implemented yet.";
+          break;
+        case "fortune":
+          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
+          output = fortunes[Math.floor(Math.random() * fortunes.length)];
+          break;
+        case "weather":
+          output = "The weather is always cloudy in cyberspace.";
+          break;
+        case "uptime":
+          output = "System uptime: 42 days, 3 hours, 17 minutes.";
+          break;
+        case "shutdown":
+          output = "Shutdown initiated... (simulation)";
+          break;
+        case "reboot":
+          output = "Rebooting system... (simulation)";
+          break;
+        case "whoami":
+          output = "You are: hacker.";
+          break;
+        case "time":
+          output = "Current time: " + new Date().toLocaleTimeString();
+          break;
+        case "echo":
+          output = args;
+          break;
+        case "reverse":
+          output = args.split("").reverse().join("");
+          break;
+        case "ascii":
+          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
+          break;
+        case "virus":
+          output = "Virus scan complete: No viruses found.";
+          break;
+        case "encrypt":
+          output = "Encrypted: " + args.split("").reverse().join("");
+          break;
+        case "decrypt":
+          output = "Decrypted: " + args.split("").reverse().join("");
+          break;
+        case "locate":
+          output = "File " + args + " not found.";
+          break;
+        case "find":
+          output = "No results found for \"" + args + "\".";
+          break;
+        case "traceroute":
+          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
+          break;
+        case "netstat":
+          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
+          break;
+        case "diskusage":
+          output = "Disk Usage: 45% used of 500GB.";
+          break;
+        case "meminfo":
+          output = "Memory Info: 8GB RAM, 3.2GB used.";
+          break;
+        case "cpu":
+          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
+          break;
+        case "battery":
+          output = "Battery: 85% charged (simulation).";
+          break;
+        case "browse":
+          if(args.length === 0) {
+            output = "Usage: browse [url]";
+          } else {
+            output = "Opening " + args + " in a new window...";
+            window.open(args, "_blank");
+          }
+          break;
+        case "note":
+          output = "Note saved: " + args;
+          break;
+        case "calcpi":
+          output = "Pi ≈ 3.14159";
+          break;
+        case "fizzbuzz":
+          let fb = "";
+          for(let i = 1; i <= 15; i++){
+            if(i % 15 === 0) fb += "FizzBuzz ";
+            else if(i % 3 === 0) fb += "Fizz ";
+            else if(i % 5 === 0) fb += "Buzz ";
+            else fb += i + " ";
+          }
+          output = fb;
+          break;
+        case "joke":
+          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
+          output = jokes[Math.floor(Math.random() * jokes.length)];
+          break;
+        case "quote":
+          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
+          output = quotes[Math.floor(Math.random() * quotes.length)];
+          break;
+        case "hack":
+          output = "Hacking in progress... Access granted.";
+          break;
+        case "scan":
+          output = "Scanning network... No vulnerabilities found.";
+          break;
+        case "connect":
+          output = "Connecting to " + args + "... Connection established.";
+          break;
+        case "disconnect":
+          output = "Disconnected from network.";
+          break;
+        case "log":
+          output = "Log: All systems operational.";
+          break;
+        case "config":
+          output = "Configuration: Default settings loaded.";
+          break;
+        case "userinfo":
+          output = "User: hacker<br>Role: Administrator";
+          break;
+        case "systeminfo":
+          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
+          break;
+        case "processes":
+          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
+          break;
+        case "ports":
+          output = "Open ports: 80, 443, 22.";
+          break;
+        case "services":
+          output = "Services: Apache, MySQL, SSH.";
+          break;
+        case "browsers":
+          output = "Installed browsers: Chrome, Firefox, Edge.";
+          break;
+        case "games":
+          output = "Available games: Guess the Number, Hacker Hangman.";
+          break;
+        case "about":
+          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
+          break;
+        case "version":
+          output = "Version: 1.0.0 (simulation).";
+          break;
+        case "chome":
+          output = "";
+          break;
+        case "msg":
+          output = "";
+          break;
+        default:
+          output = "Unknown command: " + cmd;
+          break;
+      }
+      return output;
+    }
+
+    /*************************************************
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     *************************************************/
+    function openEdgeCopy() {
+      window.open("microsoft-edge:https://www.bing.com", "_blank");
+    }
+
+    /*************************************************
+     * CHAT BOX FUNCTIONS (for "msg" command)
+     *************************************************/
+    function startChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+      chatActiveInterval = setInterval(() => {
+         let username = localStorage.getItem("chatUsername");
+         if (username) {
+              localStorage.setItem("chatActive_" + username, Date.now());
+              updateOnlineUsers();
+         }
+      }, 5000);
+    }
+    function stopChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+    }
+    function updateOnlineUsers() {
+      const onlineUsersElem = document.getElementById("onlineUsers");
+      let onlineUsers = [];
+      const now = Date.now();
+      for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith("chatActive_")) {
+          let ts = parseInt(localStorage.getItem(key));
+          if (now - ts < 30000) { // active within last 30 seconds
+            let user = key.substring("chatActive_".length);
+            if (user !== localStorage.getItem("chatUsername")) {
+              onlineUsers.push(user);
+            }
+          }
+        }
+      }
+      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
+    }
+    function openChatBox() {
+      let username = localStorage.getItem("chatUsername");
+      if (!username) {
+        username = prompt("Enter your chat username:");
+        if (!username) {
+          alert("A username is required to use chat.");
+          return;
+        }
+        localStorage.setItem("chatUsername", username);
+      }
+      document.getElementById("chatBox").style.display = "block";
+      updateChatLog();
+      startChatActiveStatus();
+    }
+    function closeChatBox() {
+      document.getElementById("chatBox").style.display = "none";
+      stopChatActiveStatus();
+    }
+    function updateChatLog() {
+      const chatLog = document.getElementById("chatLog");
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
+      chatLog.innerHTML = "";
+      messages.forEach(msg => {
+        chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
+      });
+      chatLog.scrollTop = chatLog.scrollHeight;
+      updateOnlineUsers();
+    }
+    function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const text = chatInput.value.trim();
+      if (text === "") return;
+      let messages = JSON.parse(localStorage.getItem("chatMessages") || "[]");
+      const sender = localStorage.getItem("chatUsername");
+      messages.push({ sender: sender, text: text, timestamp: new Date().getTime() });
+      localStorage.setItem("chatMessages", JSON.stringify(messages));
+      chatInput.value = "";
+      updateChatLog();
+    }
+    document.getElementById("chatSend").addEventListener("click", sendMessage);
+    document.getElementById("chatInput").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+    document.getElementById("chatClose").addEventListener("click", closeChatBox);
+    window.addEventListener("storage", (e) => {
+      if (e.key === "chatMessages") {
+        updateChatLog();
       }
     });
   </script>
