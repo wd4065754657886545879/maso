@@ -169,9 +169,7 @@
       display: block;
     }
     /* --- Terminal Tab Content (with command parser) --- */
-    #terminalTab {
-      /* Additional styling as needed */
-    }
+    #terminalTab { }
     #terminalOutput {
       width: 100%;
       height: 300px;
@@ -326,649 +324,644 @@
   <div id="footer">made by mason b.</div>
 
   <script>
-    /***********************
-     * MATRIX DIGITAL RAIN
-     ***********************/
-    const canvas = document.getElementById("matrix");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const fontSize = 16;
-    const columns = Math.floor(canvas.width / fontSize);
-    const drops = Array(columns).fill(1);
-    function drawMatrix() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#0F0";
-      ctx.font = fontSize + "px monospace";
-      for (let i = 0; i < drops.length; i++) {
-        const text = letters.charAt(Math.floor(Math.random() * letters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
-    }
-    setInterval(drawMatrix, 50);
-
-    /*********************************
-     * FAKE CONSOLE LOG (Simulation Mode)
-     *********************************/
-    const consoleElement = document.getElementById("console");
-    const messages = [
-      "Initializing hack protocol...",
-      "Bypassing firewall...",
-      "Accessing secure server...",
-      "Decrypting data streams...",
-      "HACKER MODE ACTIVATED!"
-    ];
-    let msgIndex = 0;
-    function typeMessage(message, callback) {
-      let i = 0;
-      const line = document.createElement("div");
-      if (message === "HACKER MODE ACTIVATED!") {
-        line.id = "activatedLine";
-      }
-      consoleElement.appendChild(line);
-      function type() {
-        if (i < message.length) {
-          line.innerHTML += message.charAt(i);
-          i++;
-          setTimeout(type, 50);
-        } else {
-          line.innerHTML += "<br>";
-          callback(message, line);
-        }
-      }
-      type();
-    }
-    function displayMessages() {
-      if (msgIndex < messages.length) {
-        typeMessage(messages[msgIndex], (msg, lineElement) => {
-          if (msg === "HACKER MODE ACTIVATED!") {
-            flashWeirdStuff(lineElement);
-          }
-          msgIndex++;
-          setTimeout(displayMessages, 500);
-        });
-      } else {
-        consoleElement.innerHTML += '<span class="blink">_</span>';
-      }
-    }
-    function flashWeirdStuff(lineElement) {
-      lineElement.classList.add("activated");
-      let originalFillStyle = ctx.fillStyle;
-      let flashCount = 0;
-      let flashInterval = setInterval(() => {
-        ctx.fillStyle = (flashCount % 2 === 0) ? "#FF00FF" : "#00FFFF";
-        flashCount++;
-        if (flashCount > 10) {
-          clearInterval(flashInterval);
-          ctx.fillStyle = originalFillStyle;
-        }
-      }, 100);
-      flashColorsEverywhere();
-      document.getElementById("bigHello").style.display = "block";
-    }
-    function flashColorsEverywhere() {
-      const flashOverlay = document.getElementById("flashOverlay");
-      const colors = ["rgba(0, 255, 0, 0.7)", "rgba(255, 255, 255, 0.7)", "rgba(255, 0, 0, 0.7)"];
-      let index = 0;
-      setInterval(() => {
-        flashOverlay.style.backgroundColor = colors[index];
-        index = (index + 1) % colors.length;
-      }, 200);
-    }
-
-    /*************************************************
-     * COMMAND MODAL FUNCTIONS
-     *************************************************/
-    function openCommandModal(title, content) {
-      const modal = document.getElementById("commandModal");
-      const modalContent = document.getElementById("commandModalContent");
-      modalContent.innerHTML = `<h2>${title}</h2><div>${content}</div>`;
-      modal.style.display = "block";
-    }
-    document.getElementById("commandModalClose").addEventListener("click", () => {
-      document.getElementById("commandModal").style.display = "none";
-    });
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands with own GUI)
-     *************************************************/
-    const terminalOutput = document.getElementById("terminalOutput");
-    const terminalCommand = document.getElementById("terminalCommand");
-
-    // Define an array of command objects with descriptions
-    const commandList = [
-      { cmd: "help", desc: "Displays this help list." },
-      { cmd: "clear", desc: "Clears the terminal." },
-      { cmd: "status", desc: "Shows system status." },
-      { cmd: "date", desc: "Displays the current date/time." },
-      { cmd: "ipconfig", desc: "Shows network configuration." },
-      { cmd: "ping [address]", desc: "Simulates pinging an address." },
-      { cmd: "listall", desc: "Lists all available commands." },
-      { cmd: "calc", desc: "A simple calculator (not implemented)." },
-      { cmd: "fortune", desc: "Displays a random fortune." },
-      { cmd: "weather", desc: "Shows cyberspace weather info." },
-      { cmd: "uptime", desc: "Displays system uptime." },
-      { cmd: "shutdown", desc: "Simulates a system shutdown." },
-      { cmd: "reboot", desc: "Simulates a system reboot." },
-      { cmd: "whoami", desc: "Displays user identity." },
-      { cmd: "time", desc: "Displays the current time." },
-      { cmd: "echo [text]", desc: "Echoes the provided text." },
-      { cmd: "reverse [text]", desc: "Reverses the provided text." },
-      { cmd: "ascii", desc: "Displays an ASCII art." },
-      { cmd: "virus", desc: "Simulates a virus scan." },
-      { cmd: "encrypt [text]", desc: "Encrypts the text (simple reversal)." },
-      { cmd: "decrypt [text]", desc: "Decrypts the text (simple reversal)." },
-      { cmd: "locate [file]", desc: "Searches for a file." },
-      { cmd: "find [query]", desc: "Searches for a query." },
-      { cmd: "traceroute [address]", desc: "Simulates a traceroute." },
-      { cmd: "netstat", desc: "Displays network statistics." },
-      { cmd: "diskusage", desc: "Shows disk usage." },
-      { cmd: "meminfo", desc: "Displays memory info." },
-      { cmd: "cpu", desc: "Displays CPU information." },
-      { cmd: "battery", desc: "Shows battery status." },
-      { cmd: "browse [url]", desc: "Opens the URL in a new window." },
-      { cmd: "note [text]", desc: "Saves a note." },
-      { cmd: "calcpi", desc: "Displays an approximation of Pi." },
-      { cmd: "fizzbuzz", desc: "Runs a fizzbuzz simulation." },
-      { cmd: "joke", desc: "Tells a joke." },
-      { cmd: "quote", desc: "Displays a famous quote." },
-      { cmd: "hack", desc: "Simulates a hack." },
-      { cmd: "scan", desc: "Scans for vulnerabilities." },
-      { cmd: "connect [address]", desc: "Simulates connecting to an address." },
-      { cmd: "disconnect", desc: "Simulates disconnecting." },
-      { cmd: "log", desc: "Displays a system log." },
-      { cmd: "config", desc: "Shows configuration settings." },
-      { cmd: "userinfo", desc: "Displays user information." },
-      { cmd: "systeminfo", desc: "Shows system information." },
-      { cmd: "processes", desc: "Lists running processes." },
-      { cmd: "ports", desc: "Displays open ports." },
-      { cmd: "services", desc: "Lists running services." },
-      { cmd: "browsers", desc: "Lists installed browsers." },
-      { cmd: "games", desc: "Lists available games." },
-      { cmd: "about", desc: "Displays program information." },
-      { cmd: "version", desc: "Shows the system version." }
-    ];
-
-    terminalCommand.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        const command = terminalCommand.value.trim();
-        terminalCommand.value = "";
-        // Open a command-specific modal showing the command and its output.
-        openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // The processCommand function returns a string (output) for the command,
-    // except for "listall" which opens a new window.
-    function processCommand(cmd) {
-      const parts = cmd.split(" ");
-      const baseCommand = parts[0].toLowerCase();
-      const args = parts.slice(1).join(" ");
-      let output = "";
-      switch(baseCommand) {
-        case "help":
-          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
-          break;
-        case "clear":
-          output = "Terminal cleared (simulation).";
-          break;
-        case "status":
-          output = "System status: All systems nominal.";
-          break;
-        case "date":
-          output = "Current date/time: " + new Date().toString();
-          break;
-        case "ipconfig":
-          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
-          break;
-        case "ping":
-          if(args.length === 0) {
-            output = "Usage: ping [address]";
-          } else {
-            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
-          }
-          break;
-        case "listall":
-          let listText = "";
-          commandList.forEach((cmdObj, index) => {
-            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
-          });
-          let win = window.open("", "_blank", "width=600,height=800");
-          win.document.write("<pre>" + listText + "</pre>");
-          output = "Opened command list in a new window.";
-          break;
-        case "calc":
-          output = "Calculator: Not implemented yet.";
-          break;
-        case "fortune":
-          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          output = fortunes[Math.floor(Math.random() * fortunes.length)];
-          break;
-        case "weather":
-          output = "The weather is always cloudy in cyberspace.";
-          break;
-        case "uptime":
-          output = "System uptime: 42 days, 3 hours, 17 minutes.";
-          break;
-        case "shutdown":
-          output = "Shutdown initiated... (simulation)";
-          break;
-        case "reboot":
-          output = "Rebooting system... (simulation)";
-          break;
-        case "whoami":
-          output = "You are: hacker.";
-          break;
-        case "time":
-          output = "Current time: " + new Date().toLocaleTimeString();
-          break;
-        case "echo":
-          output = args;
-          break;
-        case "reverse":
-          output = args.split("").reverse().join("");
-          break;
-        case "ascii":
-          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
-          break;
-        case "virus":
-          output = "Virus scan complete: No viruses found.";
-          break;
-        case "encrypt":
-          output = "Encrypted: " + args.split("").reverse().join("");
-          break;
-        case "decrypt":
-          output = "Decrypted: " + args.split("").reverse().join("");
-          break;
-        case "locate":
-          output = "File " + args + " not found.";
-          break;
-        case "find":
-          output = "No results found for \"" + args + "\".";
-          break;
-        case "traceroute":
-          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
-          break;
-        case "netstat":
-          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
-          break;
-        case "diskusage":
-          output = "Disk Usage: 45% used of 500GB.";
-          break;
-        case "meminfo":
-          output = "Memory Info: 8GB RAM, 3.2GB used.";
-          break;
-        case "cpu":
-          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
-          break;
-        case "battery":
-          output = "Battery: 85% charged (simulation).";
-          break;
-        case "browse":
-          if(args.length === 0) {
-            output = "Usage: browse [url]";
-          } else {
-            output = "Opening " + args + " in a new window...";
-            window.open(args, "_blank");
-          }
-          break;
-        case "note":
-          output = "Note saved: " + args;
-          break;
-        case "calcpi":
-          output = "Pi ≈ 3.14159";
-          break;
-        case "fizzbuzz":
-          let fb = "";
-          for(let i = 1; i <= 15; i++){
-            if(i % 15 === 0) fb += "FizzBuzz ";
-            else if(i % 3 === 0) fb += "Fizz ";
-            else if(i % 5 === 0) fb += "Buzz ";
-            else fb += i + " ";
-          }
-          output = fb;
-          break;
-        case "joke":
-          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          output = jokes[Math.floor(Math.random() * jokes.length)];
-          break;
-        case "quote":
-          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          output = quotes[Math.floor(Math.random() * quotes.length)];
-          break;
-        case "hack":
-          output = "Hacking in progress... Access granted.";
-          break;
-        case "scan":
-          output = "Scanning network... No vulnerabilities found.";
-          break;
-        case "connect":
-          output = "Connecting to " + args + "... Connection established.";
-          break;
-        case "disconnect":
-          output = "Disconnected from network.";
-          break;
-        case "log":
-          output = "Log: All systems operational.";
-          break;
-        case "config":
-          output = "Configuration: Default settings loaded.";
-          break;
-        case "userinfo":
-          output = "User: hacker<br>Role: Administrator";
-          break;
-        case "systeminfo":
-          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
-          break;
-        case "processes":
-          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
-          break;
-        case "ports":
-          output = "Open ports: 80, 443, 22.";
-          break;
-        case "services":
-          output = "Services: Apache, MySQL, SSH.";
-          break;
-        case "browsers":
-          output = "Installed browsers: Chrome, Firefox, Edge.";
-          break;
-        case "games":
-          output = "Available games: Guess the Number, Hacker Hangman, and additional games in the Additional Games section.";
-          break;
-        case "about":
-          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
-          break;
-        case "version":
-          output = "Version: 1.0.0 (simulation).";
-          break;
-        default:
-          output = "Unknown command: " + cmd;
-          break;
-      }
-      return output;
-    }
-
-    /*************************************************
-     * ADDITIONAL GAMES (20 More Games)
-     *************************************************/
-    const newGames = [
-      { id: "rps", name: "Rock Paper Scissors", interactive: true },
-      { id: "tictactoe", name: "Tic Tac Toe", interactive: false },
-      { id: "reaction", name: "Reaction Time Test", interactive: true },
-      { id: "typing", name: "Speed Typing Test", interactive: false },
-      { id: "memory", name: "Memory Match", interactive: false },
-      { id: "whack", name: "Whack-a-Mole", interactive: false },
-      { id: "scramble", name: "Word Scramble", interactive: false },
-      { id: "maze", name: "Maze Runner", interactive: false },
-      { id: "quiz", name: "Quiz Game", interactive: false },
-      { id: "simon", name: "Simon Says", interactive: false },
-      { id: "minesweeper", name: "Minesweeper Lite", interactive: false },
-      { id: "connectfour", name: "Connect Four", interactive: false },
-      { id: "snake", name: "Snake", interactive: false },
-      { id: "pong", name: "Pong", interactive: false },
-      { id: "breakout", name: "Breakout", interactive: false },
-      { id: "spaceinvaders", name: "Space Invaders", interactive: false },
-      { id: "flappy", name: "Flappy Bird", interactive: false },
-      { id: "2048", name: "2048", interactive: false },
-      { id: "sudoku", name: "Sudoku", interactive: false },
-      { id: "trivia", name: "Trivia Challenge", interactive: false }
-    ];
-
-    const additionalGamesContainer = document.getElementById("additionalGames");
-    newGames.forEach(game => {
-      // Create a button for each game
-      const gameButton = document.createElement("button");
-      gameButton.textContent = "Play " + game.name;
-      gameButton.id = game.id + "Button";
-      gameButton.style.display = "block";
-      gameButton.style.marginBottom = "10px";
-      
-      // Create a container for the game content
-      const gameDiv = document.createElement("div");
-      gameDiv.id = game.id + "Game";
-      gameDiv.style.display = "none";
-      gameDiv.style.border = "1px solid #0f0";
-      gameDiv.style.padding = "10px";
-      gameDiv.style.marginBottom = "20px";
-      
-      if (game.interactive) {
-        if (game.id === "rps") {
-          // Rock Paper Scissors game content
-          gameDiv.innerHTML = `
-            <p>Choose your move:</p>
-            <button onclick="playRPS('Rock')">Rock</button>
-            <button onclick="playRPS('Paper')">Paper</button>
-            <button onclick="playRPS('Scissors')">Scissors</button>
-            <p id="rpsResult"></p>
-          `;
-        } else if (game.id === "reaction") {
-          // Reaction Time Test game content
-          gameDiv.innerHTML = `
-            <p id="reactionInstruction">Wait for the button to turn green, then click!</p>
-            <button id="reactionButton" style="background-color: red; color: white;">Click me</button>
-            <p id="reactionResult"></p>
-          `;
-          initReactionTest();
-        }
-      } else {
-        gameDiv.innerHTML = `<p>Game under construction: ${game.name}</p>`;
-      }
-      
-      additionalGamesContainer.appendChild(gameButton);
-      additionalGamesContainer.appendChild(gameDiv);
-      
-      // Toggle game display on button click
-      gameButton.addEventListener("click", () => {
-        gameDiv.style.display = (gameDiv.style.display === "none" || gameDiv.style.display === "") ? "block" : "none";
-      });
-    });
-
-    /***********************
-     * ROCK PAPER SCISSORS GAME
-     ***********************/
-    function playRPS(playerMove) {
-      const moves = ["Rock", "Paper", "Scissors"];
-      const computerMove = moves[Math.floor(Math.random() * moves.length)];
-      let result = "";
-      if (playerMove === computerMove) {
-        result = "It's a tie!";
-      } else if (
-        (playerMove === "Rock" && computerMove === "Scissors") ||
-        (playerMove === "Paper" && computerMove === "Rock") ||
-        (playerMove === "Scissors" && computerMove === "Paper")
-      ) {
-        result = "You win!";
-      } else {
-        result = "You lose!";
-      }
-      document.getElementById("rpsResult").innerHTML = `You chose ${playerMove}. Computer chose ${computerMove}. ${result}`;
-    }
-
-    /***********************
-     * REACTION TIME TEST GAME
-     ***********************/
-    function initReactionTest() {
-      const reactionButton = document.getElementById("reactionButton");
-      const reactionInstruction = document.getElementById("reactionInstruction");
-      const reactionResult = document.getElementById("reactionResult");
-      
-      // When the reaction button is clicked:
-      reactionButton.onclick = function() {
-        if (reactionButton.style.backgroundColor === "green") {
-          // Button clicked after turning green: record reaction time.
-          const endTime = new Date().getTime();
-          const reactionTime = endTime - reactionButton.startTime;
-          reactionResult.innerText = "Your reaction time: " + reactionTime + " ms";
-          reactionButton.style.backgroundColor = "red";
-          reactionInstruction.innerText = "Wait for the button to turn green, then click!";
-        } else {
-          reactionResult.innerText = "Too early! Wait for green.";
-        }
-      };
-      
-      // Start a new test when the game div is shown by simulating a random delay.
-      // (This function is called each time the Reaction game is created.)
-      setTimeout(() => {
-        reactionButton.style.backgroundColor = "green";
-        reactionButton.startTime = new Date().getTime();
-        reactionInstruction.innerText = "Click now!";
-      }, Math.random() * 2000 + 1000);
-    }
-
-    /*************************************************
-     * GUESS THE NUMBER GAME LOGIC
-     *************************************************/
-    let randomNumber = Math.floor(Math.random() * 10) + 1;
-    document.getElementById("guessGameButton").addEventListener("click", () => {
-      const guessGame = document.getElementById("guessGame");
-      guessGame.style.display = (guessGame.style.display === "none" || guessGame.style.display === "") ? "block" : "none";
-      randomNumber = Math.floor(Math.random() * 10) + 1;
-      document.getElementById("guessResult").innerText = "";
-      document.getElementById("guessInput").value = "";
-    });
-    document.getElementById("guessButton").addEventListener("click", () => {
-      const guess = parseInt(document.getElementById("guessInput").value);
-      const result = document.getElementById("guessResult");
-      if (guess === randomNumber) {
-        result.innerText = "Correct! You guessed the number.";
-      } else if (guess < randomNumber) {
-        result.innerText = "Too low! Try again.";
-      } else if (guess > randomNumber) {
-        result.innerText = "Too high! Try again.";
-      } else {
-        result.innerText = "Please enter a valid number.";
-      }
-    });
-
-    /*************************************************
-     * HACKER HANGMAN GAME LOGIC
-     *************************************************/
-    let hangmanWord = "";
-    let hangmanDisplay = "";
-    let hangmanWrong = [];
-    let hangmanGuessed = [];
-    const hangmanWords = ["matrix", "cyber", "password", "hacker", "terminal", "encrypt", "firewall", "virus", "debug"];
-    const maxHangmanWrong = 6;
-    document.getElementById("hangmanGameButton").addEventListener("click", () => {
-      const hangmanGame = document.getElementById("hangmanGame");
-      hangmanGame.style.display = (hangmanGame.style.display === "none" || hangmanGame.style.display === "") ? "block" : "none";
-      hangmanWord = hangmanWords[Math.floor(Math.random() * hangmanWords.length)];
-      hangmanWrong = [];
-      hangmanGuessed = [];
-      hangmanDisplay = "";
-      for (let i = 0; i < hangmanWord.length; i++) {
-        hangmanDisplay += "_ ";
-      }
-      document.getElementById("hangmanWord").innerText = hangmanDisplay;
-      document.getElementById("hangmanWrong").innerText = "";
-      document.getElementById("hangmanGuessed").innerText = "";
-      document.getElementById("hangmanResult").innerText = "";
-    });
-    document.getElementById("hangmanGuessButton").addEventListener("click", () => {
-      let letter = document.getElementById("hangmanInput").value.toLowerCase();
-      document.getElementById("hangmanInput").value = "";
-      if (letter.length !== 1 || !letter.match(/[a-z]/)) {
-        alert("Please enter a single letter.");
-        return;
-      }
-      if (hangmanGuessed.includes(letter)) {
-        alert("You already guessed that letter.");
-        return;
-      }
-      hangmanGuessed.push(letter);
-      if (hangmanWord.includes(letter)) {
-        let newDisplay = "";
-        for (let i = 0; i < hangmanWord.length; i++) {
-          if (hangmanGuessed.includes(hangmanWord[i])) {
-            newDisplay += hangmanWord[i] + " ";
-          } else {
-            newDisplay += "_ ";
-          }
-        }
-        hangmanDisplay = newDisplay;
-        document.getElementById("hangmanWord").innerText = hangmanDisplay;
-      } else {
-        hangmanWrong.push(letter);
-        document.getElementById("hangmanWrong").innerText = hangmanWrong.join(", ");
-      }
-      document.getElementById("hangmanGuessed").innerText = hangmanGuessed.join(", ");
-      if (!hangmanDisplay.includes("_")) {
-        document.getElementById("hangmanResult").innerText = "Congratulations! You solved it.";
-      } else if (hangmanWrong.length >= maxHangmanWrong) {
-        document.getElementById("hangmanResult").innerText = "Game Over! The word was: " + hangmanWord;
-      }
-    });
-
-    /*************************************************
-     * ADJUST CANVAS ON WINDOW RESIZE
-     *************************************************/
-    window.addEventListener("resize", () => {
+    document.addEventListener('DOMContentLoaded', function() {
+      /***********************
+       * MATRIX DIGITAL RAIN
+       ***********************/
+      const canvas = document.getElementById("matrix");
+      const ctx = canvas.getContext("2d");
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-    });
-
-    /*************************************************
-     * PASSWORD VERIFICATION & SIMULATION START
-     *************************************************/
-    const passwordOverlay = document.getElementById("passwordOverlay");
-    const passwordInput = document.getElementById("passwordInput");
-    const passwordButton = document.getElementById("passwordButton");
-    const passwordError = document.getElementById("passwordError");
-    const correctPassword = "Mason"; // Standard simulation password
-    passwordButton.addEventListener("click", () => {
-      const entered = passwordInput.value;
-      if (entered === correctPassword) {
-        passwordOverlay.style.display = "none";
-        displayMessages();
-      } else if (entered === "mason") {
-        passwordOverlay.style.display = "none";
-        document.getElementById("tipMessage").style.display = "block";
-      } else if (entered === "Burns") {
-        passwordOverlay.style.display = "none";
-        showHackerGUI();
-      } else {
-        passwordError.style.display = "block";
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      const fontSize = 16;
+      const columns = Math.floor(canvas.width / fontSize);
+      const drops = Array(columns).fill(1);
+      function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0F0";
+        ctx.font = fontSize + "px monospace";
+        for (let i = 0; i < drops.length; i++) {
+          const text = letters.charAt(Math.floor(Math.random() * letters.length));
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
       }
-    });
-    passwordInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        passwordButton.click();
+      setInterval(drawMatrix, 50);
+      
+      /*********************************
+       * FAKE CONSOLE LOG (Simulation Mode)
+       *********************************/
+      const consoleElement = document.getElementById("console");
+      const messages = [
+        "Initializing hack protocol...",
+        "Bypassing firewall...",
+        "Accessing secure server...",
+        "Decrypting data streams...",
+        "HACKER MODE ACTIVATED!"
+      ];
+      let msgIndex = 0;
+      function typeMessage(message, callback) {
+        let i = 0;
+        const line = document.createElement("div");
+        if (message === "HACKER MODE ACTIVATED!") {
+          line.id = "activatedLine";
+        }
+        consoleElement.appendChild(line);
+        function type() {
+          if (i < message.length) {
+            line.innerHTML += message.charAt(i);
+            i++;
+            setTimeout(type, 50);
+          } else {
+            line.innerHTML += "<br>";
+            callback(message, line);
+          }
+        }
+        type();
       }
-    });
-    document.getElementById("backButton").addEventListener("click", () => {
-      document.getElementById("tipMessage").style.display = "none";
-      passwordOverlay.style.display = "flex";
-      passwordInput.value = "";
-      passwordInput.focus();
-    });
-
-    /*************************************************
-     * HACKER GUI (for "Burns")
-     *************************************************/
-    function showHackerGUI() {
-      document.getElementById("hackerGUI").style.display = "block";
-      showTab("terminalTab");
-    }
-    function showTab(tabId) {
-      const tabs = document.getElementsByClassName("tabContent");
-      for (let tab of tabs) {
-        tab.classList.remove("active");
+      function displayMessages() {
+        if (msgIndex < messages.length) {
+          typeMessage(messages[msgIndex], (msg, lineElement) => {
+            if (msg === "HACKER MODE ACTIVATED!") {
+              flashWeirdStuff(lineElement);
+            }
+            msgIndex++;
+            setTimeout(displayMessages, 500);
+          });
+        } else {
+          consoleElement.innerHTML += '<span class="blink">_</span>';
+        }
       }
-      document.getElementById(tabId).classList.add("active");
-    }
-    const navButtons = document.getElementsByClassName("navButton");
-    for (let btn of navButtons) {
-      btn.addEventListener("click", () => {
-        const target = btn.getAttribute("data-target");
-        showTab(target);
+      function flashWeirdStuff(lineElement) {
+        lineElement.classList.add("activated");
+        let originalFillStyle = ctx.fillStyle;
+        let flashCount = 0;
+        let flashInterval = setInterval(() => {
+          ctx.fillStyle = (flashCount % 2 === 0) ? "#FF00FF" : "#00FFFF";
+          flashCount++;
+          if (flashCount > 10) {
+            clearInterval(flashInterval);
+            ctx.fillStyle = originalFillStyle;
+          }
+        }, 100);
+        flashColorsEverywhere();
+        document.getElementById("bigHello").style.display = "block";
+      }
+      function flashColorsEverywhere() {
+        const flashOverlay = document.getElementById("flashOverlay");
+        const colors = ["rgba(0, 255, 0, 0.7)", "rgba(255, 255, 255, 0.7)", "rgba(255, 0, 0, 0.7)"];
+        let index = 0;
+        setInterval(() => {
+          flashOverlay.style.backgroundColor = colors[index];
+          index = (index + 1) % colors.length;
+        }, 200);
+      }
+      
+      /*************************************************
+       * COMMAND MODAL FUNCTIONS
+       *************************************************/
+      function openCommandModal(title, content) {
+        const modal = document.getElementById("commandModal");
+        const modalContent = document.getElementById("commandModalContent");
+        modalContent.innerHTML = `<h2>${title}</h2><div>${content}</div>`;
+        modal.style.display = "block";
+      }
+      document.getElementById("commandModalClose").addEventListener("click", () => {
+        document.getElementById("commandModal").style.display = "none";
       });
-    }
+      
+      /*************************************************
+       * TERMINAL COMMAND PARSER (50 Commands with own GUI)
+       *************************************************/
+      const terminalOutput = document.getElementById("terminalOutput");
+      const terminalCommand = document.getElementById("terminalCommand");
+      
+      // Define an array of command objects with descriptions
+      const commandList = [
+        { cmd: "help", desc: "Displays this help list." },
+        { cmd: "clear", desc: "Clears the terminal." },
+        { cmd: "status", desc: "Shows system status." },
+        { cmd: "date", desc: "Displays the current date/time." },
+        { cmd: "ipconfig", desc: "Shows network configuration." },
+        { cmd: "ping [address]", desc: "Simulates pinging an address." },
+        { cmd: "listall", desc: "Lists all available commands." },
+        { cmd: "calc", desc: "A simple calculator (not implemented)." },
+        { cmd: "fortune", desc: "Displays a random fortune." },
+        { cmd: "weather", desc: "Shows cyberspace weather info." },
+        { cmd: "uptime", desc: "Displays system uptime." },
+        { cmd: "shutdown", desc: "Simulates a system shutdown." },
+        { cmd: "reboot", desc: "Simulates a system reboot." },
+        { cmd: "whoami", desc: "Displays user identity." },
+        { cmd: "time", desc: "Displays the current time." },
+        { cmd: "echo [text]", desc: "Echoes the provided text." },
+        { cmd: "reverse [text]", desc: "Reverses the provided text." },
+        { cmd: "ascii", desc: "Displays an ASCII art." },
+        { cmd: "virus", desc: "Simulates a virus scan." },
+        { cmd: "encrypt [text]", desc: "Encrypts the text (simple reversal)." },
+        { cmd: "decrypt [text]", desc: "Decrypts the text (simple reversal)." },
+        { cmd: "locate [file]", desc: "Searches for a file." },
+        { cmd: "find [query]", desc: "Searches for a query." },
+        { cmd: "traceroute [address]", desc: "Simulates a traceroute." },
+        { cmd: "netstat", desc: "Displays network statistics." },
+        { cmd: "diskusage", desc: "Shows disk usage." },
+        { cmd: "meminfo", desc: "Displays memory info." },
+        { cmd: "cpu", desc: "Displays CPU information." },
+        { cmd: "battery", desc: "Shows battery status." },
+        { cmd: "browse [url]", desc: "Opens the URL in a new window." },
+        { cmd: "note [text]", desc: "Saves a note." },
+        { cmd: "calcpi", desc: "Displays an approximation of Pi." },
+        { cmd: "fizzbuzz", desc: "Runs a fizzbuzz simulation." },
+        { cmd: "joke", desc: "Tells a joke." },
+        { cmd: "quote", desc: "Displays a famous quote." },
+        { cmd: "hack", desc: "Simulates a hack." },
+        { cmd: "scan", desc: "Scans for vulnerabilities." },
+        { cmd: "connect [address]", desc: "Simulates connecting to an address." },
+        { cmd: "disconnect", desc: "Simulates disconnecting." },
+        { cmd: "log", desc: "Displays a system log." },
+        { cmd: "config", desc: "Shows configuration settings." },
+        { cmd: "userinfo", desc: "Displays user information." },
+        { cmd: "systeminfo", desc: "Shows system information." },
+        { cmd: "processes", desc: "Lists running processes." },
+        { cmd: "ports", desc: "Displays open ports." },
+        { cmd: "services", desc: "Lists running services." },
+        { cmd: "browsers", desc: "Lists installed browsers." },
+        { cmd: "games", desc: "Lists available games." },
+        { cmd: "about", desc: "Displays program information." },
+        { cmd: "version", desc: "Shows the system version." }
+      ];
+      
+      terminalCommand.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          const command = terminalCommand.value.trim();
+          terminalCommand.value = "";
+          // Open a command-specific modal showing the command and its output.
+          openCommandModal(command, processCommand(command));
+        }
+      });
+      
+      // The processCommand function returns a string (output) for the command,
+      // except for "listall" which opens a new window.
+      function processCommand(cmd) {
+        const parts = cmd.split(" ");
+        const baseCommand = parts[0].toLowerCase();
+        const args = parts.slice(1).join(" ");
+        let output = "";
+        switch(baseCommand) {
+          case "help":
+            output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
+            break;
+          case "clear":
+            output = "Terminal cleared (simulation).";
+            break;
+          case "status":
+            output = "System status: All systems nominal.";
+            break;
+          case "date":
+            output = "Current date/time: " + new Date().toString();
+            break;
+          case "ipconfig":
+            output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
+            break;
+          case "ping":
+            if(args.length === 0) {
+              output = "Usage: ping [address]";
+            } else {
+              output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
+            }
+            break;
+          case "listall":
+            let listText = "";
+            commandList.forEach((cmdObj, index) => {
+              listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
+            });
+            let win = window.open("", "_blank", "width=600,height=800");
+            win.document.write("<pre>" + listText + "</pre>");
+            output = "Opened command list in a new window.";
+            break;
+          case "calc":
+            output = "Calculator: Not implemented yet.";
+            break;
+          case "fortune":
+            let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
+            output = fortunes[Math.floor(Math.random() * fortunes.length)];
+            break;
+          case "weather":
+            output = "The weather is always cloudy in cyberspace.";
+            break;
+          case "uptime":
+            output = "System uptime: 42 days, 3 hours, 17 minutes.";
+            break;
+          case "shutdown":
+            output = "Shutdown initiated... (simulation)";
+            break;
+          case "reboot":
+            output = "Rebooting system... (simulation)";
+            break;
+          case "whoami":
+            output = "You are: hacker.";
+            break;
+          case "time":
+            output = "Current time: " + new Date().toLocaleTimeString();
+            break;
+          case "echo":
+            output = args;
+            break;
+          case "reverse":
+            output = args.split("").reverse().join("");
+            break;
+          case "ascii":
+            output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
+            break;
+          case "virus":
+            output = "Virus scan complete: No viruses found.";
+            break;
+          case "encrypt":
+            output = "Encrypted: " + args.split("").reverse().join("");
+            break;
+          case "decrypt":
+            output = "Decrypted: " + args.split("").reverse().join("");
+            break;
+          case "locate":
+            output = "File " + args + " not found.";
+            break;
+          case "find":
+            output = "No results found for \"" + args + "\".";
+            break;
+          case "traceroute":
+            output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
+            break;
+          case "netstat":
+            output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
+            break;
+          case "diskusage":
+            output = "Disk Usage: 45% used of 500GB.";
+            break;
+          case "meminfo":
+            output = "Memory Info: 8GB RAM, 3.2GB used.";
+            break;
+          case "cpu":
+            output = "CPU: Intel Core i7, 4 cores, 8 threads.";
+            break;
+          case "battery":
+            output = "Battery: 85% charged (simulation).";
+            break;
+          case "browse":
+            if(args.length === 0) {
+              output = "Usage: browse [url]";
+            } else {
+              output = "Opening " + args + " in a new window...";
+              window.open(args, "_blank");
+            }
+            break;
+          case "note":
+            output = "Note saved: " + args;
+            break;
+          case "calcpi":
+            output = "Pi ≈ 3.14159";
+            break;
+          case "fizzbuzz":
+            let fb = "";
+            for(let i = 1; i <= 15; i++){
+              if(i % 15 === 0) fb += "FizzBuzz ";
+              else if(i % 3 === 0) fb += "Fizz ";
+              else if(i % 5 === 0) fb += "Buzz ";
+              else fb += i + " ";
+            }
+            output = fb;
+            break;
+          case "joke":
+            let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
+            output = jokes[Math.floor(Math.random() * jokes.length)];
+            break;
+          case "quote":
+            let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
+            output = quotes[Math.floor(Math.random() * quotes.length)];
+            break;
+          case "hack":
+            output = "Hacking in progress... Access granted.";
+            break;
+          case "scan":
+            output = "Scanning network... No vulnerabilities found.";
+            break;
+          case "connect":
+            output = "Connecting to " + args + "... Connection established.";
+            break;
+          case "disconnect":
+            output = "Disconnected from network.";
+            break;
+          case "log":
+            output = "Log: All systems operational.";
+            break;
+          case "config":
+            output = "Configuration: Default settings loaded.";
+            break;
+          case "userinfo":
+            output = "User: hacker<br>Role: Administrator";
+            break;
+          case "systeminfo":
+            output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
+            break;
+          case "processes":
+            output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
+            break;
+          case "ports":
+            output = "Open ports: 80, 443, 22.";
+            break;
+          case "services":
+            output = "Services: Apache, MySQL, SSH.";
+            break;
+          case "browsers":
+            output = "Installed browsers: Chrome, Firefox, Edge.";
+            break;
+          case "games":
+            output = "Available games: Guess the Number, Hacker Hangman, and additional games in the Additional Games section.";
+            break;
+          case "about":
+            output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
+            break;
+          case "version":
+            output = "Version: 1.0.0 (simulation).";
+            break;
+          default:
+            output = "Unknown command: " + cmd;
+            break;
+        }
+        return output;
+      }
+      
+      /*************************************************
+       * ADDITIONAL GAMES (20 More Games)
+       *************************************************/
+      const newGames = [
+        { id: "rps", name: "Rock Paper Scissors", interactive: true },
+        { id: "tictactoe", name: "Tic Tac Toe", interactive: false },
+        { id: "reaction", name: "Reaction Time Test", interactive: true },
+        { id: "typing", name: "Speed Typing Test", interactive: false },
+        { id: "memory", name: "Memory Match", interactive: false },
+        { id: "whack", name: "Whack-a-Mole", interactive: false },
+        { id: "scramble", name: "Word Scramble", interactive: false },
+        { id: "maze", name: "Maze Runner", interactive: false },
+        { id: "quiz", name: "Quiz Game", interactive: false },
+        { id: "simon", name: "Simon Says", interactive: false },
+        { id: "minesweeper", name: "Minesweeper Lite", interactive: false },
+        { id: "connectfour", name: "Connect Four", interactive: false },
+        { id: "snake", name: "Snake", interactive: false },
+        { id: "pong", name: "Pong", interactive: false },
+        { id: "breakout", name: "Breakout", interactive: false },
+        { id: "spaceinvaders", name: "Space Invaders", interactive: false },
+        { id: "flappy", name: "Flappy Bird", interactive: false },
+        { id: "2048", name: "2048", interactive: false },
+        { id: "sudoku", name: "Sudoku", interactive: false },
+        { id: "trivia", name: "Trivia Challenge", interactive: false }
+      ];
+      const additionalGamesContainer = document.getElementById("additionalGames");
+      newGames.forEach(game => {
+        // Create a button for each game
+        const gameButton = document.createElement("button");
+        gameButton.textContent = "Play " + game.name;
+        gameButton.id = game.id + "Button";
+        gameButton.style.display = "block";
+        gameButton.style.marginBottom = "10px";
+        
+        // Create a container for the game content
+        const gameDiv = document.createElement("div");
+        gameDiv.id = game.id + "Game";
+        gameDiv.style.display = "none";
+        gameDiv.style.border = "1px solid #0f0";
+        gameDiv.style.padding = "10px";
+        gameDiv.style.marginBottom = "20px";
+        
+        if (game.interactive) {
+          if (game.id === "rps") {
+            // Rock Paper Scissors game content
+            gameDiv.innerHTML = `
+              <p>Choose your move:</p>
+              <button onclick="playRPS('Rock')">Rock</button>
+              <button onclick="playRPS('Paper')">Paper</button>
+              <button onclick="playRPS('Scissors')">Scissors</button>
+              <p id="rpsResult"></p>
+            `;
+          } else if (game.id === "reaction") {
+            // Reaction Time Test game content
+            gameDiv.innerHTML = `
+              <p id="reactionInstruction">Wait for the button to turn green, then click!</p>
+              <button id="reactionButton" style="background-color: red; color: white;">Click me</button>
+              <p id="reactionResult"></p>
+            `;
+            initReactionTest();
+          }
+        } else {
+          gameDiv.innerHTML = `<p>Game under construction: ${game.name}</p>`;
+        }
+        
+        additionalGamesContainer.appendChild(gameButton);
+        additionalGamesContainer.appendChild(gameDiv);
+        
+        // Toggle game display on button click
+        gameButton.addEventListener("click", () => {
+          gameDiv.style.display = (gameDiv.style.display === "none" || gameDiv.style.display === "") ? "block" : "none";
+        });
+      });
+      
+      /***********************
+       * ROCK PAPER SCISSORS GAME
+       ***********************/
+      window.playRPS = function(playerMove) {
+        const moves = ["Rock", "Paper", "Scissors"];
+        const computerMove = moves[Math.floor(Math.random() * moves.length)];
+        let result = "";
+        if (playerMove === computerMove) {
+          result = "It's a tie!";
+        } else if (
+          (playerMove === "Rock" && computerMove === "Scissors") ||
+          (playerMove === "Paper" && computerMove === "Rock") ||
+          (playerMove === "Scissors" && computerMove === "Paper")
+        ) {
+          result = "You win!";
+        } else {
+          result = "You lose!";
+        }
+        document.getElementById("rpsResult").innerHTML = `You chose ${playerMove}. Computer chose ${computerMove}. ${result}`;
+      };
+      
+      /***********************
+       * REACTION TIME TEST GAME
+       ***********************/
+      function initReactionTest() {
+        const reactionButton = document.getElementById("reactionButton");
+        const reactionInstruction = document.getElementById("reactionInstruction");
+        const reactionResult = document.getElementById("reactionResult");
+        reactionButton.onclick = function() {
+          if (reactionButton.style.backgroundColor === "green") {
+            const endTime = new Date().getTime();
+            const reactionTime = endTime - reactionButton.startTime;
+            reactionResult.innerText = "Your reaction time: " + reactionTime + " ms";
+            reactionButton.style.backgroundColor = "red";
+            reactionInstruction.innerText = "Wait for the button to turn green, then click!";
+          } else {
+            reactionResult.innerText = "Too early! Wait for green.";
+          }
+        };
+        setTimeout(() => {
+          reactionButton.style.backgroundColor = "green";
+          reactionButton.startTime = new Date().getTime();
+          reactionInstruction.innerText = "Click now!";
+        }, Math.random() * 2000 + 1000);
+      }
+      
+      /*************************************************
+       * GUESS THE NUMBER GAME LOGIC
+       *************************************************/
+      let randomNumber = Math.floor(Math.random() * 10) + 1;
+      document.getElementById("guessGameButton").addEventListener("click", () => {
+        const guessGame = document.getElementById("guessGame");
+        guessGame.style.display = (guessGame.style.display === "none" || guessGame.style.display === "") ? "block" : "none";
+        randomNumber = Math.floor(Math.random() * 10) + 1;
+        document.getElementById("guessResult").innerText = "";
+        document.getElementById("guessInput").value = "";
+      });
+      document.getElementById("guessButton").addEventListener("click", () => {
+        const guess = parseInt(document.getElementById("guessInput").value);
+        const result = document.getElementById("guessResult");
+        if (guess === randomNumber) {
+          result.innerText = "Correct! You guessed the number.";
+        } else if (guess < randomNumber) {
+          result.innerText = "Too low! Try again.";
+        } else if (guess > randomNumber) {
+          result.innerText = "Too high! Try again.";
+        } else {
+          result.innerText = "Please enter a valid number.";
+        }
+      });
+      
+      /*************************************************
+       * HACKER HANGMAN GAME LOGIC
+       *************************************************/
+      let hangmanWord = "";
+      let hangmanDisplay = "";
+      let hangmanWrong = [];
+      let hangmanGuessed = [];
+      const hangmanWords = ["matrix", "cyber", "password", "hacker", "terminal", "encrypt", "firewall", "virus", "debug"];
+      const maxHangmanWrong = 6;
+      document.getElementById("hangmanGameButton").addEventListener("click", () => {
+        const hangmanGame = document.getElementById("hangmanGame");
+        hangmanGame.style.display = (hangmanGame.style.display === "none" || hangmanGame.style.display === "") ? "block" : "none";
+        hangmanWord = hangmanWords[Math.floor(Math.random() * hangmanWords.length)];
+        hangmanWrong = [];
+        hangmanGuessed = [];
+        hangmanDisplay = "";
+        for (let i = 0; i < hangmanWord.length; i++) {
+          hangmanDisplay += "_ ";
+        }
+        document.getElementById("hangmanWord").innerText = hangmanDisplay;
+        document.getElementById("hangmanWrong").innerText = "";
+        document.getElementById("hangmanGuessed").innerText = "";
+        document.getElementById("hangmanResult").innerText = "";
+      });
+      document.getElementById("hangmanGuessButton").addEventListener("click", () => {
+        let letter = document.getElementById("hangmanInput").value.toLowerCase();
+        document.getElementById("hangmanInput").value = "";
+        if (letter.length !== 1 || !letter.match(/[a-z]/)) {
+          alert("Please enter a single letter.");
+          return;
+        }
+        if (hangmanGuessed.includes(letter)) {
+          alert("You already guessed that letter.");
+          return;
+        }
+        hangmanGuessed.push(letter);
+        if (hangmanWord.includes(letter)) {
+          let newDisplay = "";
+          for (let i = 0; i < hangmanWord.length; i++) {
+            if (hangmanGuessed.includes(hangmanWord[i])) {
+              newDisplay += hangmanWord[i] + " ";
+            } else {
+              newDisplay += "_ ";
+            }
+          }
+          hangmanDisplay = newDisplay;
+          document.getElementById("hangmanWord").innerText = hangmanDisplay;
+        } else {
+          hangmanWrong.push(letter);
+          document.getElementById("hangmanWrong").innerText = hangmanWrong.join(", ");
+        }
+        document.getElementById("hangmanGuessed").innerText = hangmanGuessed.join(", ");
+        if (!hangmanDisplay.includes("_")) {
+          document.getElementById("hangmanResult").innerText = "Congratulations! You solved it.";
+        } else if (hangmanWrong.length >= maxHangmanWrong) {
+          document.getElementById("hangmanResult").innerText = "Game Over! The word was: " + hangmanWord;
+        }
+      });
+      
+      /*************************************************
+       * ADJUST CANVAS ON WINDOW RESIZE
+       *************************************************/
+      window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+      
+      /*************************************************
+       * PASSWORD VERIFICATION & SIMULATION START
+       *************************************************/
+      const passwordOverlay = document.getElementById("passwordOverlay");
+      const passwordInput = document.getElementById("passwordInput");
+      const passwordButton = document.getElementById("passwordButton");
+      const passwordError = document.getElementById("passwordError");
+      const correctPassword = "Mason"; // Standard simulation password
+      passwordButton.addEventListener("click", () => {
+        const entered = passwordInput.value;
+        if (entered === correctPassword) {
+          passwordOverlay.style.display = "none";
+          displayMessages();
+        } else if (entered === "mason") {
+          passwordOverlay.style.display = "none";
+          document.getElementById("tipMessage").style.display = "block";
+        } else if (entered === "Burns") {
+          passwordOverlay.style.display = "none";
+          showHackerGUI();
+        } else {
+          passwordError.style.display = "block";
+        }
+      });
+      passwordInput.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          passwordButton.click();
+        }
+      });
+      document.getElementById("backButton").addEventListener("click", () => {
+        document.getElementById("tipMessage").style.display = "none";
+        passwordOverlay.style.display = "flex";
+        passwordInput.value = "";
+        passwordInput.focus();
+      });
+      
+      /*************************************************
+       * HACKER GUI (for "Burns")
+       *************************************************/
+      function showHackerGUI() {
+        document.getElementById("hackerGUI").style.display = "block";
+        showTab("terminalTab");
+      }
+      function showTab(tabId) {
+        const tabs = document.getElementsByClassName("tabContent");
+        for (let tab of tabs) {
+          tab.classList.remove("active");
+        }
+        document.getElementById(tabId).classList.add("active");
+      }
+      const navButtons = document.getElementsByClassName("navButton");
+      for (let btn of navButtons) {
+        btn.addEventListener("click", () => {
+          const target = btn.getAttribute("data-target");
+          showTab(target);
+        });
+      }
+    });
   </script>
 </body>
 </html>
