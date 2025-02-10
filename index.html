@@ -31,7 +31,7 @@
       z-index: 1;
       pointer-events: none;
     }
-    /* Console overlay for hacker messages (simulation mode) */
+    /* Console overlay (for simulation mode messages) */
     #overlay {
       position: absolute;
       top: 20px;
@@ -41,7 +41,7 @@
       font-size: 18px;
       line-height: 1.4;
     }
-    /* Password overlay */
+    /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
       top: 0; 
@@ -57,14 +57,14 @@
       color: #0f0;
       text-align: center;
     }
-    /* Header in password overlay */
+    /* Header in the password overlay */
     #madeByHeader {
       font-size: 16px;
       color: #0f0;
       text-shadow: 0 0 5px #0f0;
       margin-bottom: 20px;
     }
-    /* Big message (for simulation mode) */
+    /* Big message for simulation mode */
     #bigHello {
       position: absolute;
       top: 50%;
@@ -83,7 +83,7 @@
       50% { opacity: 0; }
       100% { opacity: 1; }
     }
-    /* Tip message (if user enters "mason" in lowercase) */
+    /* Tip message when user enters "mason" in lowercase */
     #tipMessage {
       position: fixed;
       top: 50%;
@@ -95,7 +95,7 @@
       display: none;
       text-align: center;
     }
-    /* Back button (for tip message view) */
+    /* Back button style (for tip message view) */
     #backButton {
       margin-top: 40px;
       padding: 10px 20px;
@@ -105,7 +105,7 @@
       border: 1px solid #0f0;
       color: #0f0;
     }
-    /* Footer (small pink text in bottom-right) */
+    /* Footer styling (small pink text in bottom-right) */
     #footer {
       position: fixed;
       bottom: 10px;
@@ -168,7 +168,28 @@
     .tabContent.active {
       display: block;
     }
-    /* --- Games Tab Content Styles --- */
+    /* --- Terminal Tab Content (with command parser) --- */
+    #terminalTab {
+      /* Already inside hackerGUI, so adjust padding as needed */
+    }
+    #terminalOutput {
+      width: 100%;
+      height: 300px;
+      background: black;
+      color: #0f0;
+      border: 1px solid #0f0;
+      overflow: auto;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #terminalCommand {
+      width: 100%;
+      background: black;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 5px;
+    }
+    /* --- Games Tab Content --- */
     /* Guess the Number Game */
     #guessGame {
       display: none;
@@ -207,11 +228,11 @@
       <button class="navButton" data-target="toolsTab">Tools</button>
     </div>
     <div id="hackerContent">
-      <!-- Terminal Tab -->
+      <!-- Terminal Tab with Command Parser -->
       <div id="terminalTab" class="tabContent active">
         <h2>Terminal</h2>
-        <p>Welcome to the terminal. Type commands below:</p>
-        <textarea id="terminalInput" rows="10" style="width: 100%; background: black; color: #0f0; border: 1px solid #0f0;"></textarea>
+        <div id="terminalOutput"></div>
+        <input type="text" id="terminalCommand" placeholder="Type a command and press Enter">
       </div>
       <!-- Games Tab -->
       <div id="gamesTab" class="tabContent">
@@ -247,24 +268,24 @@
   <!-- Flash Overlay for Background Colors -->
   <div id="flashOverlay"></div>
 
-  <!-- Console Overlay for Hacker Messages (simulation mode) -->
+  <!-- Console Overlay for Simulation Mode Messages -->
   <div id="overlay">
     <div id="console"></div>
   </div>
 
-  <!-- Matrix Canvas -->
+  <!-- Matrix Canvas for Digital Rain -->
   <canvas id="matrix"></canvas>
 
-  <!-- Big Message (for simulation mode) -->
+  <!-- Big Message for Simulation Mode -->
   <div id="bigHello">THX FOR YOUR PASSWORDS</div>
   
   <!-- Footer -->
   <div id="footer">made by mason b.</div>
 
   <script>
-    /*********************
+    /***********************
      * MATRIX DIGITAL RAIN
-     *********************/
+     ***********************/
     const canvas = document.getElementById("matrix");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
@@ -289,9 +310,9 @@
     }
     setInterval(drawMatrix, 50);
 
-    /*********************
+    /*********************************
      * FAKE CONSOLE LOG (Simulation Mode)
-     *********************/
+     *********************************/
     const consoleElement = document.getElementById("console");
     const messages = [
       "Initializing hack protocol...",
@@ -358,9 +379,9 @@
       }, 200);
     }
 
-    /*********************
+    /*************************************************
      * PASSWORD VERIFICATION & SIMULATION START
-     *********************/
+     *************************************************/
     const passwordOverlay = document.getElementById("passwordOverlay");
     const passwordInput = document.getElementById("passwordInput");
     const passwordButton = document.getElementById("passwordButton");
@@ -393,9 +414,9 @@
       passwordInput.focus();
     });
 
-    /*********************
+    /*************************************************
      * HACKER GUI (for "Burns")
-     *********************/
+     *************************************************/
     function showHackerGUI() {
       document.getElementById("hackerGUI").style.display = "block";
       showTab("terminalTab");
@@ -415,15 +436,227 @@
       });
     }
 
-    /*********************
-     * Guess the Number Game Logic
-     *********************/
+    /*************************************************
+     * TERMINAL COMMAND PARSER (50 Commands)
+     *************************************************/
+    // In the Terminal tab, we use a scrollable output div and an input field.
+    const terminalOutput = document.getElementById("terminalOutput");
+    const terminalCommand = document.getElementById("terminalCommand");
+
+    // List of available commands (50 commands)
+    const availableCommands = [
+      "help", "clear", "status", "date", "ipconfig", "ping", "listall", "calc", "fortune", "weather",
+      "uptime", "shutdown", "reboot", "whoami", "time", "echo", "reverse", "ascii", "virus", "encrypt",
+      "decrypt", "locate", "find", "traceroute", "netstat", "diskusage", "meminfo", "cpu", "battery", "browse",
+      "note", "calcpi", "fizzbuzz", "joke", "quote", "hack", "scan", "connect", "disconnect", "log",
+      "config", "userinfo", "systeminfo", "processes", "ports", "services", "browsers", "games", "about", "version"
+    ];
+
+    terminalCommand.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        const command = terminalCommand.value.trim();
+        terminalCommand.value = "";
+        appendOutput("<span style='color:#0f0;'>> " + command + "</span><br>");
+        processCommand(command);
+      }
+    });
+
+    function appendOutput(text) {
+      terminalOutput.innerHTML += text;
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    function processCommand(cmd) {
+      const parts = cmd.split(" ");
+      const baseCommand = parts[0].toLowerCase();
+      const args = parts.slice(1).join(" ");
+      switch(baseCommand) {
+        case "help":
+          appendOutput("Available commands: " + availableCommands.join(", ") + "<br>");
+          break;
+        case "clear":
+          terminalOutput.innerHTML = "";
+          break;
+        case "status":
+          appendOutput("System status: All systems nominal.<br>");
+          break;
+        case "date":
+          appendOutput("Current date/time: " + new Date().toString() + "<br>");
+          break;
+        case "ipconfig":
+          appendOutput("IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1<br>");
+          break;
+        case "ping":
+          if(args.length === 0) {
+            appendOutput("Usage: ping [address]<br>");
+          } else {
+            appendOutput("Pinging " + args + " with 32 bytes of data:<br>Request timed out.<br>");
+          }
+          break;
+        case "listall":
+          let cmds = availableCommands.join(", ");
+          let win = window.open("", "_blank");
+          win.document.write("<pre>" + cmds + "</pre>");
+          break;
+        case "calc":
+          appendOutput("Calculator: Not implemented yet.<br>");
+          break;
+        case "fortune":
+          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
+          appendOutput(fortunes[Math.floor(Math.random() * fortunes.length)] + "<br>");
+          break;
+        case "weather":
+          appendOutput("The weather is always cloudy in cyberspace.<br>");
+          break;
+        case "uptime":
+          appendOutput("System uptime: 42 days, 3 hours, 17 minutes.<br>");
+          break;
+        case "shutdown":
+          appendOutput("Shutdown initiated... (simulation)<br>");
+          break;
+        case "reboot":
+          appendOutput("Rebooting system... (simulation)<br>");
+          break;
+        case "whoami":
+          appendOutput("You are: hacker.<br>");
+          break;
+        case "time":
+          appendOutput("Current time: " + new Date().toLocaleTimeString() + "<br>");
+          break;
+        case "echo":
+          appendOutput(args + "<br>");
+          break;
+        case "reverse":
+          let reversed = args.split("").reverse().join("");
+          appendOutput(reversed + "<br>");
+          break;
+        case "ascii":
+          appendOutput("<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre><br>");
+          break;
+        case "virus":
+          appendOutput("Virus scan complete: No viruses found.<br>");
+          break;
+        case "encrypt":
+          appendOutput("Encrypted: " + args.split("").reverse().join("") + "<br>");
+          break;
+        case "decrypt":
+          appendOutput("Decrypted: " + args.split("").reverse().join("") + "<br>");
+          break;
+        case "locate":
+          appendOutput("File " + args + " not found.<br>");
+          break;
+        case "find":
+          appendOutput("No results found for \"" + args + "\".<br>");
+          break;
+        case "traceroute":
+          appendOutput("Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *<br>");
+          break;
+        case "netstat":
+          appendOutput("Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80<br>");
+          break;
+        case "diskusage":
+          appendOutput("Disk Usage: 45% used of 500GB.<br>");
+          break;
+        case "meminfo":
+          appendOutput("Memory Info: 8GB RAM, 3.2GB used.<br>");
+          break;
+        case "cpu":
+          appendOutput("CPU: Intel Core i7, 4 cores, 8 threads.<br>");
+          break;
+        case "battery":
+          appendOutput("Battery: 85% charged (simulation).<br>");
+          break;
+        case "browse":
+          if(args.length === 0) {
+            appendOutput("Usage: browse [url]<br>");
+          } else {
+            appendOutput("Opening " + args + " in a new window...<br>");
+            window.open(args, "_blank");
+          }
+          break;
+        case "note":
+          appendOutput("Note saved: " + args + "<br>");
+          break;
+        case "calcpi":
+          appendOutput("Pi ≈ 3.14159<br>");
+          break;
+        case "fizzbuzz":
+          let fb = "";
+          for(let i=1; i<=15; i++){
+            if(i % 15 === 0) fb += "FizzBuzz ";
+            else if(i % 3 === 0) fb += "Fizz ";
+            else if(i % 5 === 0) fb += "Buzz ";
+            else fb += i + " ";
+          }
+          appendOutput(fb + "<br>");
+          break;
+        case "joke":
+          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
+          appendOutput(jokes[Math.floor(Math.random() * jokes.length)] + "<br>");
+          break;
+        case "quote":
+          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
+          appendOutput(quotes[Math.floor(Math.random() * quotes.length)] + "<br>");
+          break;
+        case "hack":
+          appendOutput("Hacking in progress... Access granted.<br>");
+          break;
+        case "scan":
+          appendOutput("Scanning network... No vulnerabilities found.<br>");
+          break;
+        case "connect":
+          appendOutput("Connecting to " + args + "... Connection established.<br>");
+          break;
+        case "disconnect":
+          appendOutput("Disconnected from network.<br>");
+          break;
+        case "log":
+          appendOutput("Log: All systems operational.<br>");
+          break;
+        case "config":
+          appendOutput("Configuration: Default settings loaded.<br>");
+          break;
+        case "userinfo":
+          appendOutput("User: hacker<br>Role: Administrator<br>");
+          break;
+        case "systeminfo":
+          appendOutput("System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).<br>");
+          break;
+        case "processes":
+          appendOutput("Running processes: chrome.exe, code.exe, explorer.exe (simulated list).<br>");
+          break;
+        case "ports":
+          appendOutput("Open ports: 80, 443, 22.<br>");
+          break;
+        case "services":
+          appendOutput("Services: Apache, MySQL, SSH.<br>");
+          break;
+        case "browsers":
+          appendOutput("Installed browsers: Chrome, Firefox, Edge.<br>");
+          break;
+        case "games":
+          appendOutput("Available games: Guess the Number, Hacker Hangman.<br>");
+          break;
+        case "about":
+          appendOutput("Fake Hacker Terminal v1.0. Made for fun by mason b.<br>");
+          break;
+        case "version":
+          appendOutput("Version: 1.0.0 (simulation).<br>");
+          break;
+        default:
+          appendOutput("Unknown command: " + cmd + "<br>");
+          break;
+      }
+    }
+
+    /*************************************************
+     * GUESS THE NUMBER GAME LOGIC
+     *************************************************/
     let randomNumber = Math.floor(Math.random() * 10) + 1;
     document.getElementById("guessGameButton").addEventListener("click", () => {
       const guessGame = document.getElementById("guessGame");
-      // Toggle display of the guess game area
       guessGame.style.display = (guessGame.style.display === "none" || guessGame.style.display === "") ? "block" : "none";
-      randomNumber = Math.floor(Math.random() * 10) + 1; // Reset random number
+      randomNumber = Math.floor(Math.random() * 10) + 1;
       document.getElementById("guessResult").innerText = "";
       document.getElementById("guessInput").value = "";
     });
@@ -441,9 +674,9 @@
       }
     });
 
-    /*********************
-     * Hacker Hangman Game Logic
-     *********************/
+    /*************************************************
+     * HACKER HANGMAN GAME LOGIC
+     *************************************************/
     let hangmanWord = "";
     let hangmanDisplay = "";
     let hangmanWrong = [];
@@ -453,7 +686,6 @@
     document.getElementById("hangmanGameButton").addEventListener("click", () => {
       const hangmanGame = document.getElementById("hangmanGame");
       hangmanGame.style.display = (hangmanGame.style.display === "none" || hangmanGame.style.display === "") ? "block" : "none";
-      // Initialize Hangman game
       hangmanWord = hangmanWords[Math.floor(Math.random() * hangmanWords.length)];
       hangmanWrong = [];
       hangmanGuessed = [];
@@ -479,7 +711,6 @@
       }
       hangmanGuessed.push(letter);
       if (hangmanWord.includes(letter)) {
-        // Update display by revealing all occurrences of the letter
         let newDisplay = "";
         for (let i = 0; i < hangmanWord.length; i++) {
           if (hangmanGuessed.includes(hangmanWord[i])) {
@@ -502,9 +733,9 @@
       }
     });
 
-    /*********************
-     * Adjust Canvas on Resize
-     *********************/
+    /*************************************************
+     * ADJUST CANVAS ON WINDOW RESIZE
+     *************************************************/
     window.addEventListener("resize", () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
