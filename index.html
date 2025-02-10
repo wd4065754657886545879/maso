@@ -225,6 +225,59 @@
       color: #0f0;
       cursor: pointer;
     }
+    /* --- Chat Box Modal (for "msg" command) --- */
+    #chatBox {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      max-height: 400px;
+      background: #111;
+      border: 2px solid #0f0;
+      padding: 10px;
+      z-index: 60;
+      overflow-y: auto;
+      box-shadow: 0 0 20px #0f0;
+    }
+    #chatBox h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+    #chatLog {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #0f0;
+      padding: 5px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    #chatInput {
+      width: calc(100% - 60px);
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #0f0;
+      background: #000;
+      color: #0f0;
+    }
+    #chatSend {
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #222;
+      border: 1px solid #0f0;
+      color: #0f0;
+    }
+    #chatClose {
+      margin-top: 10px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #222;
+      border: 1px solid #0f0;
+      color: #0f0;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -294,6 +347,15 @@
   <div id="commandModal">
     <div id="commandModalContent"></div>
     <button id="commandModalClose">Close</button>
+  </div>
+
+  <!-- Chat Box Modal (for "msg" command) -->
+  <div id="chatBox">
+    <h2>Chat Box</h2>
+    <div id="chatLog"></div>
+    <input type="text" id="chatInput" placeholder="Type your message">
+    <button id="chatSend">Send</button>
+    <button id="chatClose">Close Chat</button>
   </div>
 
   <!-- Flash Overlay for Background Colors -->
@@ -424,6 +486,53 @@
     });
 
     /*************************************************
+     * CHAT BOX FUNCTIONS (for "msg" command)
+     *************************************************/
+    // Generate a random session ID for this tab
+    const sessionId = "User " + Math.random().toString(36).substr(2, 5);
+    // Ensure a chatMessages array exists in localStorage
+    if (!localStorage.getItem("chatMessages")) {
+      localStorage.setItem("chatMessages", JSON.stringify([]));
+    }
+    function openChatBox() {
+      document.getElementById("chatBox").style.display = "block";
+      updateChatLog();
+    }
+    function closeChatBox() {
+      document.getElementById("chatBox").style.display = "none";
+    }
+    function updateChatLog() {
+      const chatLog = document.getElementById("chatLog");
+      let messages = JSON.parse(localStorage.getItem("chatMessages"));
+      chatLog.innerHTML = "";
+      messages.forEach(msg => {
+        chatLog.innerHTML += `<p><strong>${msg.sender}:</strong> ${msg.text}</p>`;
+      });
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const text = chatInput.value.trim();
+      if (text === "") return;
+      let messages = JSON.parse(localStorage.getItem("chatMessages"));
+      messages.push({ sender: sessionId, text: text, timestamp: new Date().getTime() });
+      localStorage.setItem("chatMessages", JSON.stringify(messages));
+      chatInput.value = "";
+      updateChatLog();
+    }
+    document.getElementById("chatSend").addEventListener("click", sendMessage);
+    document.getElementById("chatInput").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+    document.getElementById("chatClose").addEventListener("click", closeChatBox);
+    // Listen for storage events to update the chat log in real time
+    window.addEventListener("storage", (e) => {
+      if (e.key === "chatMessages") {
+        updateChatLog();
+      }
+    });
+
+    /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
     const terminalOutput = document.getElementById("terminalOutput");
@@ -481,24 +590,30 @@
       { cmd: "games", desc: "Lists available games." },
       { cmd: "about", desc: "Displays program information." },
       { cmd: "version", desc: "Shows the system version." },
-      // New command "chome"
-      { cmd: "chome", desc: "Opens a simulated copy of Microsoft Edge with a working search bar." }
+      { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a working search bar)." },
+      { cmd: "msg", desc: "Opens a chat box for multi-user chat." }
     ];
 
     terminalCommand.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // If command is "chome", do not open the modal; instead, open the simulated Edge copy.
+        // If command is "chome", open Edge via protocol handler.
         if (command.toLowerCase() === "chome") {
           openEdgeCopy();
           return;
         }
+        // If command is "msg", open the chat box.
+        if (command.toLowerCase() === "msg") {
+          openChatBox();
+          return;
+        }
+        // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
       }
     });
 
-    // The processCommand function returns a string (output) for the command.
+    // The processCommand function returns a string output for the command.
     function processCommand(cmd) {
       const parts = cmd.split(" ");
       const baseCommand = parts[0].toLowerCase();
@@ -680,10 +795,14 @@
         case "version":
           output = "Version: 1.0.0 (simulation).";
           break;
-        // New command "chome" – opens a simulated copy of Microsoft Edge in a new tab.
         case "chome":
-          openEdgeCopy();
-          output = ""; // No modal output needed.
+          // This case is handled above in the event listener.
+          output = "";
+          break;
+        case "msg":
+          // Open the chat box modal.
+          openChatBox();
+          output = "";
           break;
         default:
           output = "Unknown command: " + cmd;
@@ -693,52 +812,60 @@
     }
 
     /*************************************************
-     * OPEN SIMULATED MICROSOFT EDGE COPY (for "chome")
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
     function openEdgeCopy() {
-      const edgeWindow = window.open("", "_blank", "width=800,height=600");
-      edgeWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Simulated Microsoft Edge</title>
-  <style>
-    body {
-      background: #fff;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
+      // Attempts to open Microsoft Edge using the microsoft-edge: protocol.
+      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
+      window.open("microsoft-edge:https://www.bing.com", "_blank");
     }
-    .search-container {
-      max-width: 600px;
-      margin: 100px auto;
-      text-align: center;
+
+    /*************************************************
+     * CHAT BOX FUNCTIONS (for "msg" command)
+     *************************************************/
+    // Generate a random session ID for this tab
+    const sessionId = "User " + Math.random().toString(36).substr(2, 5);
+    // Ensure a chatMessages array exists in localStorage
+    if (!localStorage.getItem("chatMessages")) {
+      localStorage.setItem("chatMessages", JSON.stringify([]));
     }
-    input[type="text"] {
-      width: 80%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    function openChatBox() {
+      document.getElementById("chatBox").style.display = "block";
+      updateChatLog();
     }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-top: 10px;
-      cursor: pointer;
+    function closeChatBox() {
+      document.getElementById("chatBox").style.display = "none";
     }
-  </style>
-</head>
-<body>
-  <div class="search-container">
-    <h1>Simulated Microsoft Edge</h1>
-    <input type="text" id="searchBar" placeholder="Search the web...">
-    <br>
-    <button onclick="window.location.href='https://www.bing.com/search?q=' + document.getElementById('searchBar').value">Search</button>
-  </div>
-</body>
-</html>`);
-      edgeWindow.document.close();
+    function updateChatLog() {
+      const chatLog = document.getElementById("chatLog");
+      let messages = JSON.parse(localStorage.getItem("chatMessages"));
+      chatLog.innerHTML = "";
+      messages.forEach(msg => {
+        chatLog.innerHTML += `<p><strong>${msg.sender}:</strong> ${msg.text}</p>`;
+      });
+      chatLog.scrollTop = chatLog.scrollHeight;
     }
+    function sendMessage() {
+      const chatInput = document.getElementById("chatInput");
+      const text = chatInput.value.trim();
+      if (text === "") return;
+      let messages = JSON.parse(localStorage.getItem("chatMessages"));
+      messages.push({ sender: sessionId, text: text, timestamp: new Date().getTime() });
+      localStorage.setItem("chatMessages", JSON.stringify(messages));
+      chatInput.value = "";
+      updateChatLog();
+    }
+    document.getElementById("chatSend").addEventListener("click", sendMessage);
+    document.getElementById("chatInput").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+    document.getElementById("chatClose").addEventListener("click", closeChatBox);
+    // Listen for storage events to update chat log in real time
+    window.addEventListener("storage", (e) => {
+      if (e.key === "chatMessages") {
+        updateChatLog();
+      }
+    });
 
     /*************************************************
      * GUESS THE NUMBER GAME LOGIC
