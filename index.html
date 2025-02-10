@@ -26,7 +26,7 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%; 
+      width: 100%;
       height: 100%;
       z-index: 1;
       pointer-events: none;
@@ -44,9 +44,9 @@
     /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
-      top: 0; 
+      top: 0;
       left: 0;
-      width: 100%; 
+      width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.9);
       display: flex;
@@ -200,6 +200,33 @@
       display: none;
       margin-top: 20px;
     }
+    /* --- Command Modal (for command-specific GUIs) --- */
+    #commandModal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111;
+      border: 2px solid #0f0;
+      padding: 20px;
+      z-index: 50;
+      color: #0f0;
+      width: 80%;
+      max-width: 600px;
+      box-shadow: 0 0 20px #0f0;
+    }
+    #commandModal h2 {
+      margin-top: 0;
+    }
+    #commandModalClose {
+      margin-top: 20px;
+      padding: 5px 10px;
+      background: #222;
+      border: 1px solid #0f0;
+      color: #0f0;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -263,6 +290,12 @@
         <p>More tools coming soon...</p>
       </div>
     </div>
+  </div>
+
+  <!-- Command Modal (for command-specific GUIs) -->
+  <div id="commandModal">
+    <div id="commandModalContent"></div>
+    <button id="commandModalClose">Close</button>
   </div>
 
   <!-- Flash Overlay for Background Colors -->
@@ -380,69 +413,25 @@
     }
 
     /*************************************************
-     * PASSWORD VERIFICATION & SIMULATION START
+     * COMMAND MODAL FUNCTIONS
      *************************************************/
-    const passwordOverlay = document.getElementById("passwordOverlay");
-    const passwordInput = document.getElementById("passwordInput");
-    const passwordButton = document.getElementById("passwordButton");
-    const passwordError = document.getElementById("passwordError");
-    const correctPassword = "Mason"; // Standard simulation password
-    passwordButton.addEventListener("click", () => {
-      const entered = passwordInput.value;
-      if (entered === correctPassword) {
-        passwordOverlay.style.display = "none";
-        displayMessages();
-      } else if (entered === "mason") {
-        passwordOverlay.style.display = "none";
-        document.getElementById("tipMessage").style.display = "block";
-      } else if (entered === "Burns") {
-        passwordOverlay.style.display = "none";
-        showHackerGUI();
-      } else {
-        passwordError.style.display = "block";
-      }
-    });
-    passwordInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        passwordButton.click();
-      }
-    });
-    document.getElementById("backButton").addEventListener("click", () => {
-      document.getElementById("tipMessage").style.display = "none";
-      passwordOverlay.style.display = "flex";
-      passwordInput.value = "";
-      passwordInput.focus();
+    function openCommandModal(title, content) {
+      const modal = document.getElementById("commandModal");
+      const modalContent = document.getElementById("commandModalContent");
+      modalContent.innerHTML = `<h2>${title}</h2><div>${content}</div>`;
+      modal.style.display = "block";
+    }
+    document.getElementById("commandModalClose").addEventListener("click", () => {
+      document.getElementById("commandModal").style.display = "none";
     });
 
     /*************************************************
-     * HACKER GUI (for "Burns")
-     *************************************************/
-    function showHackerGUI() {
-      document.getElementById("hackerGUI").style.display = "block";
-      showTab("terminalTab");
-    }
-    function showTab(tabId) {
-      const tabs = document.getElementsByClassName("tabContent");
-      for (let tab of tabs) {
-        tab.classList.remove("active");
-      }
-      document.getElementById(tabId).classList.add("active");
-    }
-    const navButtons = document.getElementsByClassName("navButton");
-    for (let btn of navButtons) {
-      btn.addEventListener("click", () => {
-        const target = btn.getAttribute("data-target");
-        showTab(target);
-      });
-    }
-
-    /*************************************************
-     * TERMINAL COMMAND PARSER (50 Commands)
+     * TERMINAL COMMAND PARSER (50 Commands with own GUI)
      *************************************************/
     const terminalOutput = document.getElementById("terminalOutput");
     const terminalCommand = document.getElementById("terminalCommand");
 
-    // Define an array of command objects with description
+    // Define an array of command objects with descriptions
     const commandList = [
       { cmd: "help", desc: "Displays this help list." },
       { cmd: "clear", desc: "Clears the terminal." },
@@ -500,201 +489,199 @@
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        appendOutput("<span style='color:#0f0;'>> " + command + "</span><br>");
-        processCommand(command);
+        // Instead of appending to terminal output, open the command GUI modal.
+        openCommandModal(command, processCommand(command));
       }
     });
 
-    function appendOutput(text) {
-      terminalOutput.innerHTML += text;
-      terminalOutput.scrollTop = terminalOutput.scrollHeight;
-    }
-
+    // The processCommand function returns a string (output) for the command,
+    // except for "listall" which opens a new window.
     function processCommand(cmd) {
       const parts = cmd.split(" ");
       const baseCommand = parts[0].toLowerCase();
       const args = parts.slice(1).join(" ");
+      let output = "";
       switch(baseCommand) {
         case "help":
-          appendOutput("Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>");
+          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
           break;
         case "clear":
-          terminalOutput.innerHTML = "";
+          output = "Terminal cleared (simulation).";
           break;
         case "status":
-          appendOutput("System status: All systems nominal.<br>");
+          output = "System status: All systems nominal.";
           break;
         case "date":
-          appendOutput("Current date/time: " + new Date().toString() + "<br>");
+          output = "Current date/time: " + new Date().toString();
           break;
         case "ipconfig":
-          appendOutput("IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1<br>");
+          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
           break;
         case "ping":
           if(args.length === 0) {
-            appendOutput("Usage: ping [address]<br>");
+            output = "Usage: ping [address]";
           } else {
-            appendOutput("Pinging " + args + " with 32 bytes of data:<br>Request timed out.<br>");
+            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
           }
           break;
         case "listall":
-          // Build a numbered list of all commands with their descriptions
           let listText = "";
           commandList.forEach((cmdObj, index) => {
             listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
           });
           let win = window.open("", "_blank", "width=600,height=800");
           win.document.write("<pre>" + listText + "</pre>");
+          output = "Opened command list in a new window.";
           break;
         case "calc":
-          appendOutput("Calculator: Not implemented yet.<br>");
+          output = "Calculator: Not implemented yet.";
           break;
         case "fortune":
           let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
-          appendOutput(fortunes[Math.floor(Math.random() * fortunes.length)] + "<br>");
+          output = fortunes[Math.floor(Math.random() * fortunes.length)];
           break;
         case "weather":
-          appendOutput("The weather is always cloudy in cyberspace.<br>");
+          output = "The weather is always cloudy in cyberspace.";
           break;
         case "uptime":
-          appendOutput("System uptime: 42 days, 3 hours, 17 minutes.<br>");
+          output = "System uptime: 42 days, 3 hours, 17 minutes.";
           break;
         case "shutdown":
-          appendOutput("Shutdown initiated... (simulation)<br>");
+          output = "Shutdown initiated... (simulation)";
           break;
         case "reboot":
-          appendOutput("Rebooting system... (simulation)<br>");
+          output = "Rebooting system... (simulation)";
           break;
         case "whoami":
-          appendOutput("You are: hacker.<br>");
+          output = "You are: hacker.";
           break;
         case "time":
-          appendOutput("Current time: " + new Date().toLocaleTimeString() + "<br>");
+          output = "Current time: " + new Date().toLocaleTimeString();
           break;
         case "echo":
-          appendOutput(args + "<br>");
+          output = args;
           break;
         case "reverse":
-          let reversed = args.split("").reverse().join("");
-          appendOutput(reversed + "<br>");
+          output = args.split("").reverse().join("");
           break;
         case "ascii":
-          appendOutput("<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre><br>");
+          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
           break;
         case "virus":
-          appendOutput("Virus scan complete: No viruses found.<br>");
+          output = "Virus scan complete: No viruses found.";
           break;
         case "encrypt":
-          appendOutput("Encrypted: " + args.split("").reverse().join("") + "<br>");
+          output = "Encrypted: " + args.split("").reverse().join("");
           break;
         case "decrypt":
-          appendOutput("Decrypted: " + args.split("").reverse().join("") + "<br>");
+          output = "Decrypted: " + args.split("").reverse().join("");
           break;
         case "locate":
-          appendOutput("File " + args + " not found.<br>");
+          output = "File " + args + " not found.";
           break;
         case "find":
-          appendOutput("No results found for \"" + args + "\".<br>");
+          output = "No results found for \"" + args + "\".";
           break;
         case "traceroute":
-          appendOutput("Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *<br>");
+          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
           break;
         case "netstat":
-          appendOutput("Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80<br>");
+          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
           break;
         case "diskusage":
-          appendOutput("Disk Usage: 45% used of 500GB.<br>");
+          output = "Disk Usage: 45% used of 500GB.";
           break;
         case "meminfo":
-          appendOutput("Memory Info: 8GB RAM, 3.2GB used.<br>");
+          output = "Memory Info: 8GB RAM, 3.2GB used.";
           break;
         case "cpu":
-          appendOutput("CPU: Intel Core i7, 4 cores, 8 threads.<br>");
+          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
           break;
         case "battery":
-          appendOutput("Battery: 85% charged (simulation).<br>");
+          output = "Battery: 85% charged (simulation).";
           break;
         case "browse":
           if(args.length === 0) {
-            appendOutput("Usage: browse [url]<br>");
+            output = "Usage: browse [url]";
           } else {
-            appendOutput("Opening " + args + " in a new window...<br>");
+            output = "Opening " + args + " in a new window...";
             window.open(args, "_blank");
           }
           break;
         case "note":
-          appendOutput("Note saved: " + args + "<br>");
+          output = "Note saved: " + args;
           break;
         case "calcpi":
-          appendOutput("Pi ≈ 3.14159<br>");
+          output = "Pi ≈ 3.14159";
           break;
         case "fizzbuzz":
           let fb = "";
-          for(let i = 1; i <= 15; i++){
+          for(let i=1; i<=15; i++){
             if(i % 15 === 0) fb += "FizzBuzz ";
             else if(i % 3 === 0) fb += "Fizz ";
             else if(i % 5 === 0) fb += "Buzz ";
             else fb += i + " ";
           }
-          appendOutput(fb + "<br>");
+          output = fb;
           break;
         case "joke":
           let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
-          appendOutput(jokes[Math.floor(Math.random() * jokes.length)] + "<br>");
+          output = jokes[Math.floor(Math.random() * jokes.length)];
           break;
         case "quote":
           let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
-          appendOutput(quotes[Math.floor(Math.random() * quotes.length)] + "<br>");
+          output = quotes[Math.floor(Math.random() * quotes.length)];
           break;
         case "hack":
-          appendOutput("Hacking in progress... Access granted.<br>");
+          output = "Hacking in progress... Access granted.";
           break;
         case "scan":
-          appendOutput("Scanning network... No vulnerabilities found.<br>");
+          output = "Scanning network... No vulnerabilities found.";
           break;
         case "connect":
-          appendOutput("Connecting to " + args + "... Connection established.<br>");
+          output = "Connecting to " + args + "... Connection established.";
           break;
         case "disconnect":
-          appendOutput("Disconnected from network.<br>");
+          output = "Disconnected from network.";
           break;
         case "log":
-          appendOutput("Log: All systems operational.<br>");
+          output = "Log: All systems operational.";
           break;
         case "config":
-          appendOutput("Configuration: Default settings loaded.<br>");
+          output = "Configuration: Default settings loaded.";
           break;
         case "userinfo":
-          appendOutput("User: hacker<br>Role: Administrator<br>");
+          output = "User: hacker<br>Role: Administrator";
           break;
         case "systeminfo":
-          appendOutput("System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).<br>");
+          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
           break;
         case "processes":
-          appendOutput("Running processes: chrome.exe, code.exe, explorer.exe (simulated list).<br>");
+          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
           break;
         case "ports":
-          appendOutput("Open ports: 80, 443, 22.<br>");
+          output = "Open ports: 80, 443, 22.";
           break;
         case "services":
-          appendOutput("Services: Apache, MySQL, SSH.<br>");
+          output = "Services: Apache, MySQL, SSH.";
           break;
         case "browsers":
-          appendOutput("Installed browsers: Chrome, Firefox, Edge.<br>");
+          output = "Installed browsers: Chrome, Firefox, Edge.";
           break;
         case "games":
-          appendOutput("Available games: Guess the Number, Hacker Hangman.<br>");
+          output = "Available games: Guess the Number, Hacker Hangman.";
           break;
         case "about":
-          appendOutput("Fake Hacker Terminal v1.0. Made for fun by mason b.<br>");
+          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
           break;
         case "version":
-          appendOutput("Version: 1.0.0 (simulation).<br>");
+          output = "Version: 1.0.0 (simulation).";
           break;
         default:
-          appendOutput("Unknown command: " + cmd + "<br>");
+          output = "Unknown command: " + cmd;
           break;
       }
+      return output;
     }
 
     /*************************************************
@@ -788,6 +775,63 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     });
+
+    /*************************************************
+     * PASSWORD VERIFICATION & SIMULATION START
+     *************************************************/
+    const passwordOverlay = document.getElementById("passwordOverlay");
+    const passwordInput = document.getElementById("passwordInput");
+    const passwordButton = document.getElementById("passwordButton");
+    const passwordError = document.getElementById("passwordError");
+    const correctPassword = "Mason"; // Standard simulation password
+    passwordButton.addEventListener("click", () => {
+      const entered = passwordInput.value;
+      if (entered === correctPassword) {
+        passwordOverlay.style.display = "none";
+        displayMessages();
+      } else if (entered === "mason") {
+        passwordOverlay.style.display = "none";
+        document.getElementById("tipMessage").style.display = "block";
+      } else if (entered === "Burns") {
+        passwordOverlay.style.display = "none";
+        showHackerGUI();
+      } else {
+        passwordError.style.display = "block";
+      }
+    });
+    passwordInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        passwordButton.click();
+      }
+    });
+    document.getElementById("backButton").addEventListener("click", () => {
+      document.getElementById("tipMessage").style.display = "none";
+      passwordOverlay.style.display = "flex";
+      passwordInput.value = "";
+      passwordInput.focus();
+    });
+
+    /*************************************************
+     * HACKER GUI (for "Burns")
+     *************************************************/
+    function showHackerGUI() {
+      document.getElementById("hackerGUI").style.display = "block";
+      showTab("terminalTab");
+    }
+    function showTab(tabId) {
+      const tabs = document.getElementsByClassName("tabContent");
+      for (let tab of tabs) {
+        tab.classList.remove("active");
+      }
+      document.getElementById(tabId).classList.add("active");
+    }
+    const navButtons = document.getElementsByClassName("navButton");
+    for (let btn of navButtons) {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        showTab(target);
+      });
+    }
   </script>
 </body>
 </html>
