@@ -429,7 +429,7 @@
     const terminalOutput = document.getElementById("terminalOutput");
     const terminalCommand = document.getElementById("terminalCommand");
 
-    // Add our new command "chome" to the command list.
+    // Define an array of command objects with descriptions
     const commandList = [
       { cmd: "help", desc: "Displays this help list." },
       { cmd: "clear", desc: "Clears the terminal." },
@@ -482,20 +482,21 @@
       { cmd: "about", desc: "Displays program information." },
       { cmd: "version", desc: "Shows the system version." },
       // New command "chome" added below:
-      { cmd: "chome", desc: "Makes a copy of Microsoft Edge (simulation)." }
+      { cmd: "chome", desc: "Creates a simulated Microsoft Edge search bar." }
     ];
 
     terminalCommand.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // Open the command modal with the command's output
+        // For most commands, open a modal showing the command output.
+        // (For commands like "listall" that already open their own window, processCommand will handle it.)
         openCommandModal(command, processCommand(command));
       }
     });
 
     // The processCommand function returns a string (output) for the command,
-    // except for "listall" which opens a new window.
+    // except for commands that handle their own behavior.
     function processCommand(cmd) {
       const parts = cmd.split(" ");
       const baseCommand = parts[0].toLowerCase();
@@ -616,7 +617,7 @@
           break;
         case "fizzbuzz":
           let fb = "";
-          for(let i = 1; i <= 15; i++){
+          for(let i=1; i<=15; i++){
             if(i % 15 === 0) fb += "FizzBuzz ";
             else if(i % 3 === 0) fb += "Fizz ";
             else if(i % 5 === 0) fb += "Buzz ";
@@ -678,9 +679,29 @@
           output = "Version: 1.0.0 (simulation).";
           break;
         case "chome":
-          // New command: simulate copying Microsoft Edge.
-          output = "Copying Microsoft Edge... Duplicate instance created successfully!";
-          break;
+          // For the "chome" command, open a modal with a simulated Microsoft Edge search bar.
+          let searchHTML = `
+            <div style="display: flex; align-items: center;">
+              <input id="edgeSearchInput" type="text" placeholder="Search or enter URL" style="flex: 1; padding: 10px; font-size: 16px; border: none; outline: none;">
+              <button id="edgeSearchButton" style="padding: 10px; font-size: 16px; background: #0f0; border: none; cursor: pointer;">Search</button>
+            </div>
+            <div style="margin-top: 10px; font-size: 12px; color: #888;">Microsoft Edge - Simulated Search Bar</div>
+          `;
+          openCommandModal("Microsoft Edge", searchHTML);
+          // Attach event to the search button after a short delay to ensure the modal content is rendered.
+          setTimeout(() => {
+            const searchButton = document.getElementById("edgeSearchButton");
+            if (searchButton) {
+              searchButton.addEventListener("click", () => {
+                const query = document.getElementById("edgeSearchInput").value;
+                if(query.trim() !== ""){
+                  window.open("https://www.bing.com/search?q=" + encodeURIComponent(query), "_blank");
+                }
+              });
+            }
+          }, 100);
+          // Return an empty string because the output is handled by our custom modal.
+          return "";
         default:
           output = "Unknown command: " + cmd;
           break;
