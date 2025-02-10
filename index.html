@@ -26,7 +26,7 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       z-index: 1;
       pointer-events: none;
@@ -44,9 +44,9 @@
     /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       background: rgba(0, 0, 0, 0.9);
       display: flex;
@@ -190,6 +190,9 @@
       padding: 5px;
     }
     /* --- Games Tab Content --- */
+    #gamesTab h2 {
+      margin-top: 0;
+    }
     /* Guess the Number Game */
     #guessGame {
       display: none;
@@ -198,6 +201,10 @@
     /* Hacker Hangman Game */
     #hangmanGame {
       display: none;
+      margin-top: 20px;
+    }
+    /* Additional Games container */
+    #additionalGames {
       margin-top: 20px;
     }
     /* --- Command Modal (for command-specific GUIs) --- */
@@ -283,6 +290,9 @@
           <button id="hangmanGuessButton">Guess Letter</button>
           <p id="hangmanResult"></p>
         </div>
+        <!-- Additional Games Section -->
+        <h2>Additional Games</h2>
+        <div id="additionalGames"></div>
       </div>
       <!-- Tools Tab -->
       <div id="toolsTab" class="tabContent">
@@ -489,7 +499,7 @@
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // Instead of appending to terminal output, open the command GUI modal.
+        // Open a command-specific modal showing the command and its output.
         openCommandModal(command, processCommand(command));
       }
     });
@@ -616,7 +626,7 @@
           break;
         case "fizzbuzz":
           let fb = "";
-          for(let i=1; i<=15; i++){
+          for(let i = 1; i <= 15; i++){
             if(i % 15 === 0) fb += "FizzBuzz ";
             else if(i % 3 === 0) fb += "Fizz ";
             else if(i % 5 === 0) fb += "Buzz ";
@@ -669,7 +679,7 @@
           output = "Installed browsers: Chrome, Firefox, Edge.";
           break;
         case "games":
-          output = "Available games: Guess the Number, Hacker Hangman.";
+          output = "Available games: Guess the Number, Hacker Hangman, and additional games in the Additional Games section.";
           break;
         case "about":
           output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
@@ -682,6 +692,133 @@
           break;
       }
       return output;
+    }
+
+    /*************************************************
+     * ADDITIONAL GAMES (20 More Games)
+     *************************************************/
+    const newGames = [
+      { id: "rps", name: "Rock Paper Scissors", interactive: true },
+      { id: "tictactoe", name: "Tic Tac Toe", interactive: false },
+      { id: "reaction", name: "Reaction Time Test", interactive: true },
+      { id: "typing", name: "Speed Typing Test", interactive: false },
+      { id: "memory", name: "Memory Match", interactive: false },
+      { id: "whack", name: "Whack-a-Mole", interactive: false },
+      { id: "scramble", name: "Word Scramble", interactive: false },
+      { id: "maze", name: "Maze Runner", interactive: false },
+      { id: "quiz", name: "Quiz Game", interactive: false },
+      { id: "simon", name: "Simon Says", interactive: false },
+      { id: "minesweeper", name: "Minesweeper Lite", interactive: false },
+      { id: "connectfour", name: "Connect Four", interactive: false },
+      { id: "snake", name: "Snake", interactive: false },
+      { id: "pong", name: "Pong", interactive: false },
+      { id: "breakout", name: "Breakout", interactive: false },
+      { id: "spaceinvaders", name: "Space Invaders", interactive: false },
+      { id: "flappy", name: "Flappy Bird", interactive: false },
+      { id: "2048", name: "2048", interactive: false },
+      { id: "sudoku", name: "Sudoku", interactive: false },
+      { id: "trivia", name: "Trivia Challenge", interactive: false }
+    ];
+
+    const additionalGamesContainer = document.getElementById("additionalGames");
+    newGames.forEach(game => {
+      // Create a button for each game
+      const gameButton = document.createElement("button");
+      gameButton.textContent = "Play " + game.name;
+      gameButton.id = game.id + "Button";
+      gameButton.style.display = "block";
+      gameButton.style.marginBottom = "10px";
+      
+      // Create a container for the game content
+      const gameDiv = document.createElement("div");
+      gameDiv.id = game.id + "Game";
+      gameDiv.style.display = "none";
+      gameDiv.style.border = "1px solid #0f0";
+      gameDiv.style.padding = "10px";
+      gameDiv.style.marginBottom = "20px";
+      
+      if (game.interactive) {
+        if (game.id === "rps") {
+          // Rock Paper Scissors game content
+          gameDiv.innerHTML = `
+            <p>Choose your move:</p>
+            <button onclick="playRPS('Rock')">Rock</button>
+            <button onclick="playRPS('Paper')">Paper</button>
+            <button onclick="playRPS('Scissors')">Scissors</button>
+            <p id="rpsResult"></p>
+          `;
+        } else if (game.id === "reaction") {
+          // Reaction Time Test game content
+          gameDiv.innerHTML = `
+            <p id="reactionInstruction">Wait for the button to turn green, then click!</p>
+            <button id="reactionButton" style="background-color: red; color: white;">Click me</button>
+            <p id="reactionResult"></p>
+          `;
+          initReactionTest();
+        }
+      } else {
+        gameDiv.innerHTML = `<p>Game under construction: ${game.name}</p>`;
+      }
+      
+      additionalGamesContainer.appendChild(gameButton);
+      additionalGamesContainer.appendChild(gameDiv);
+      
+      // Toggle game display on button click
+      gameButton.addEventListener("click", () => {
+        gameDiv.style.display = (gameDiv.style.display === "none" || gameDiv.style.display === "") ? "block" : "none";
+      });
+    });
+
+    /***********************
+     * ROCK PAPER SCISSORS GAME
+     ***********************/
+    function playRPS(playerMove) {
+      const moves = ["Rock", "Paper", "Scissors"];
+      const computerMove = moves[Math.floor(Math.random() * moves.length)];
+      let result = "";
+      if (playerMove === computerMove) {
+        result = "It's a tie!";
+      } else if (
+        (playerMove === "Rock" && computerMove === "Scissors") ||
+        (playerMove === "Paper" && computerMove === "Rock") ||
+        (playerMove === "Scissors" && computerMove === "Paper")
+      ) {
+        result = "You win!";
+      } else {
+        result = "You lose!";
+      }
+      document.getElementById("rpsResult").innerHTML = `You chose ${playerMove}. Computer chose ${computerMove}. ${result}`;
+    }
+
+    /***********************
+     * REACTION TIME TEST GAME
+     ***********************/
+    function initReactionTest() {
+      const reactionButton = document.getElementById("reactionButton");
+      const reactionInstruction = document.getElementById("reactionInstruction");
+      const reactionResult = document.getElementById("reactionResult");
+      
+      // When the reaction button is clicked:
+      reactionButton.onclick = function() {
+        if (reactionButton.style.backgroundColor === "green") {
+          // Button clicked after turning green: record reaction time.
+          const endTime = new Date().getTime();
+          const reactionTime = endTime - reactionButton.startTime;
+          reactionResult.innerText = "Your reaction time: " + reactionTime + " ms";
+          reactionButton.style.backgroundColor = "red";
+          reactionInstruction.innerText = "Wait for the button to turn green, then click!";
+        } else {
+          reactionResult.innerText = "Too early! Wait for green.";
+        }
+      };
+      
+      // Start a new test when the game div is shown by simulating a random delay.
+      // (This function is called each time the Reaction game is created.)
+      setTimeout(() => {
+        reactionButton.style.backgroundColor = "green";
+        reactionButton.startTime = new Date().getTime();
+        reactionInstruction.innerText = "Click now!";
+      }, Math.random() * 2000 + 1000);
     }
 
     /*************************************************
