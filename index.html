@@ -600,7 +600,7 @@
     const terminalOutput = document.getElementById("terminalOutput");
     const terminalCommand = document.getElementById("terminalCommand");
 
-    // Define an array of command objects with descriptions
+    // Define an array of command objects with descriptions (chome removed)
     const commandList = [
       { cmd: "help", desc: "Displays this help list." },
       { cmd: "clear", desc: "Clears the terminal." },
@@ -652,7 +652,6 @@
       { cmd: "games", desc: "Lists available games." },
       { cmd: "about", desc: "Displays program information." },
       { cmd: "version", desc: "Shows the system version." },
-      { cmd: "chome", desc: "Uses Microsoft Edge (opens Edge in a new tab with a search query)." },
       { cmd: "msg", desc: "Opens a chat box for multi-user chat (requires a username)." }
     ];
 
@@ -660,12 +659,7 @@
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // If command starts with "chome", extract the search query.
-        if (command.toLowerCase().startsWith("chome")) {
-          let query = command.substring("chome".length).trim();
-          openEdgeCopy(query);
-          return;
-        }
+        // Removed "chome" command handling.
         // If command is "msg", open the chat box.
         if (command.toLowerCase() === "msg") {
           openChatBox();
@@ -863,9 +857,6 @@
         case "version":
           output = "Version: 1.0.0 (simulation).";
           break;
-        case "chome":
-          output = "";
-          break;
         case "msg":
           output = "";
           break;
@@ -877,21 +868,14 @@
     }
 
     /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     * ENABLE ENTER KEY SUBMISSION FOR THE PASSWORD FIELD
      *************************************************/
-    // This function builds a URL using Microsoft.com's search page.
-    // If no query is provided, it opens the Microsoft homepage.
-    function openEdgeCopy(query) {
-      let searchQuery = "";
-      if (query && query.length > 0) {
-        searchQuery = query.trim().split(/\s+/).join("+");
-        const url = "microsoft-edge:https://www.microsoft.com/en-us/search?q=" + searchQuery;
-        window.open(url, "_blank");
-      } else {
-        // If no query is provided, open the homepage.
-        window.open("microsoft-edge:https://www.microsoft.com/en-us/", "_blank");
+    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        document.getElementById("passwordButton").click();
       }
-    }
+    });
 
     /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
@@ -900,12 +884,6 @@
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // If command starts with "chome", extract the search query.
-        if (command.toLowerCase().startsWith("chome")) {
-          let query = command.substring("chome".length).trim();
-          openEdgeCopy(query);
-          return;
-        }
         // If command is "msg", open the chat box.
         if (command.toLowerCase() === "msg") {
           openChatBox();
@@ -913,14 +891,6 @@
         }
         // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // Enable pressing Enter in the password field to trigger the password button.
-    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter" || e.keyCode === 13) {
-        e.preventDefault();
-        document.getElementById("passwordButton").click();
       }
     });
   </script>
