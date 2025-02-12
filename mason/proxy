@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>My Google Copy</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 50px;
+    }
+    /* Form container styling */
+    #entryFormContainer, #mainPageContainer {
+      margin: 20px auto;
+    }
+    form {
+      display: inline-block;
+      padding: 20px;
+      border: 1px solid #ccc;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input[type="text"] {
+      padding: 8px;
+      width: 250px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    .search-container {
+      margin: 20px auto;
+    }
+    /* Table styling for the info panel */
+    #infoPanel {
+      margin-top: 50px;
+      display: none;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #333;
+    }
+    th, td {
+      padding: 8px 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- User entry form (shown only if the user hasn’t entered info before) -->
+  <div id="entryFormContainer">
+    <h1>Welcome! Please enter your information:</h1>
+    <form id="entryForm">
+      <label for="fullname">Full Name:</label>
+      <input type="text" id="fullname" name="fullname" required>
+      
+      <label for="grade">Grade:</label>
+      <input type="text" id="grade" name="grade" required>
+      
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Main page: search interface and Info button -->
+  <div id="mainPageContainer" style="display:none;">
+    <h1>My Google Copy</h1>
+    
+    <!-- Search Form -->
+    <div class="search-container">
+      <form id="searchForm">
+        <input type="text" id="searchQuery" placeholder="Search..." required>
+        <button type="submit">Search</button>
+      </form>
+    </div>
+    
+    <!-- Info Button -->
+    <button id="infoButton">Info</button>
+    
+    <!-- Info Panel (hidden by default) -->
+    <div id="infoPanel">
+      <h2>All Entries</h2>
+      <div id="infoContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user info exists in localStorage. If it does, show the main page; if not, show the entry form.
+    function init() {
+      var userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        document.getElementById("entryFormContainer").style.display = "none";
+        document.getElementById("mainPageContainer").style.display = "block";
+      } else {
+        document.getElementById("entryFormContainer").style.display = "block";
+        document.getElementById("mainPageContainer").style.display = "none";
+      }
+    }
+
+    // Add a new entry (if not already present) to a global list stored in localStorage.
+    function addEntry(fullname, grade) {
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      // Check if this entry already exists (using both full name and grade as criteria)
+      var exists = entries.some(function(entry) {
+        return entry.fullname === fullname && entry.grade === grade;
+      });
+      if (!exists) {
+        entries.push({ fullname: fullname, grade: grade });
+        localStorage.setItem("allEntries", JSON.stringify(entries));
+      }
+    }
+
+    // Handle submission of the user info form.
+    document.getElementById("entryForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var fullname = document.getElementById("fullname").value.trim();
+      var grade = document.getElementById("grade").value.trim();
+      if (fullname === "" || grade === "") {
+        alert("Please fill out both fields.");
+        return;
+      }
+      // Save the user info in localStorage (so we don't ask again on subsequent visits)
+      var userInfo = { fullname: fullname, grade: grade };
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      // Also add this entry to the global list
+      addEntry(fullname, grade);
+      // Hide the entry form and show the main page
+      document.getElementById("entryFormContainer").style.display = "none";
+      document.getElementById("mainPageContainer").style.display = "block";
+    });
+
+    // Handle search form submission:
+    // When the user enters a query, randomly redirect them to one of several search engines.
+    document.getElementById("searchForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var query = document.getElementById("searchQuery").value;
+      var urls = [
+        "https://www.google.com/search?q=",
+        "https://www.bing.com/search?q=",
+        "https://duckduckgo.com/?q="
+      ];
+      var randomUrl = urls[Math.floor(Math.random() * urls.length)];
+      window.location.href = randomUrl + encodeURIComponent(query);
+    });
+
+    // Handle Info button click:
+    // Prompts for a password and, if correct, displays a table of all saved entries.
+    document.getElementById("infoButton").addEventListener("click", function() {
+      var password = prompt("Enter password:");
+      if (password === null) return; // if the user cancels
+      if (password !== "Mason1966") {
+        alert("Incorrect password!");
+        return;
+      }
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      var html = "<table><tr><th>Full Name</th><th>Grade</th></tr>";
+      entries.forEach(function(entry) {
+        html += "<tr><td>" + entry.fullname + "</td><td>" + entry.grade + "</td></tr>";
+      });
+      html += "</table>";
+      document.getElementById("infoContent").innerHTML = html;
+      document.getElementById("infoPanel").style.display = "block";
+    });
+
+    // Initialize the page on load.
+    init();
+  </script>
+</body>
+</html>
