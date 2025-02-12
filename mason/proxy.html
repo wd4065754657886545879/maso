@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Search</title>
+  <!-- Use a modern Google Font -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #89f7fe, #66a6ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 30px 40px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .container:hover {
+      transform: scale(1.02);
+    }
+    h1 {
+      margin: 0 0 15px;
+      font-weight: 500;
+    }
+    p {
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #555;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      text-align: left;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      border-color: #66a6ff;
+      outline: none;
+    }
+    button {
+      background: #66a6ff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    button:hover {
+      background: #559be0;
+      transform: scale(1.02);
+    }
+    button:disabled {
+      background: #a1c8ff;
+      cursor: not-allowed;
+    }
+    #infoPanel {
+      margin-top: 30px;
+      display: none;
+      text-align: left;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- User Information Form -->
+  <div id="entryFormContainer" class="container">
+    <h1>Welcome!</h1>
+    <p>Please enter your information:</p>
+    <form id="entryForm">
+      <label for="fullname">Full Name:</label>
+      <input type="text" id="fullname" name="fullname" required>
+      
+      <label for="grade">Grade:</label>
+      <input type="text" id="grade" name="grade" required>
+      
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Main Search Page -->
+  <div id="mainPageContainer" class="container hidden">
+    <h1>Custom Search</h1>
+    <form id="searchForm">
+      <input type="text" id="searchQuery" placeholder="Enter your search query..." required>
+      <button type="submit">Search</button>
+    </form>
+    <button id="infoButton">Info</button>
+    <div id="infoPanel">
+      <h2>All Entries</h2>
+      <div id="infoContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user info exists in localStorage; if so, skip the entry form.
+    function init() {
+      var userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        document.getElementById("entryFormContainer").classList.add("hidden");
+        document.getElementById("mainPageContainer").classList.remove("hidden");
+      } else {
+        document.getElementById("entryFormContainer").classList.remove("hidden");
+        document.getElementById("mainPageContainer").classList.add("hidden");
+      }
+    }
+
+    // Add a new entry to a global list stored in localStorage (if not already present).
+    function addEntry(fullname, grade) {
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      var exists = entries.some(function(entry) {
+        return entry.fullname === fullname && entry.grade === grade;
+      });
+      if (!exists) {
+        entries.push({ fullname: fullname, grade: grade });
+        localStorage.setItem("allEntries", JSON.stringify(entries));
+      }
+    }
+
+    // Handle submission of the user info form.
+    document.getElementById("entryForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var fullname = document.getElementById("fullname").value.trim();
+      var grade = document.getElementById("grade").value.trim();
+      if (!fullname || !grade) {
+        alert("Please fill out both fields.");
+        return;
+      }
+      var userInfo = { fullname: fullname, grade: grade };
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      addEntry(fullname, grade);
+      document.getElementById("entryFormContainer").classList.add("hidden");
+      document.getElementById("mainPageContainer").classList.remove("hidden");
+    });
+
+    // Handle search form submission.
+    document.getElementById("searchForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var query = document.getElementById("searchQuery").value.trim();
+      if (!query) return;
+      
+      // Update the browser's URL with the search query.
+      history.pushState({}, '', '?q=' + encodeURIComponent(query));
+      
+      // Provide visual feedback that a search is in progress.
+      var searchButton = e.target.querySelector('button');
+      searchButton.textContent = "Searching...";
+      searchButton.disabled = true;
+      
+      // After a short delay, randomly choose one of several search URLs.
+      setTimeout(function() {
+        var urls = [
+          "https://www.google.com/search?q=",
+          "https://www.bing.com/search?q=",
+          "https://duckduckgo.com/?q="
+        ];
+        var randomUrl = urls[Math.floor(Math.random() * urls.length)];
+        window.location.href = randomUrl + encodeURIComponent(query);
+      }, 800);
+    });
+
+    // Handle Info button click: prompt for the password and, if correct, display all entries.
+    document.getElementById("infoButton").addEventListener("click", function() {
+      var password = prompt("Enter password:");
+      if (password === null) return;
+      if (password !== "Mason1966") {
+        alert("Incorrect password!");
+        return;
+      }
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      var html = "<table><tr><th>Full Name</th><th>Grade</th></tr>";
+      entries.forEach(function(entry) {
+        html += "<tr><td>" + entry.fullname + "</td><td>" + entry.grade + "</td></tr>";
+      });
+      html += "</table>";
+      document.getElementById("infoContent").innerHTML = html;
+      document.getElementById("infoPanel").style.display = "block";
+    });
+
+    // Initialize the page.
+    init();
+  </script>
+</body>
+</html>
