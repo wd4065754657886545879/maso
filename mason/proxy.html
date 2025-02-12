@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mason B. Google Proxy</title>
-  <!-- Use a modern Google Font -->
+  <title>Custom Search</title>
+  <!-- Google Font for modern look -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
@@ -13,6 +13,7 @@
       font-family: 'Roboto', sans-serif;
       background: linear-gradient(135deg, #89f7fe, #66a6ff);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
@@ -27,6 +28,7 @@
       width: 90%;
       text-align: center;
       transition: transform 0.3s ease;
+      margin-bottom: 20px;
     }
     .container:hover {
       transform: scale(1.02);
@@ -105,14 +107,28 @@
     .hidden {
       display: none;
     }
+    /* Navigation bar styling */
+    #navBar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      width: 90%;
+      max-width: 500px;
+    }
+    #navBar button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- User Information Form -->
+  <!-- User Information Form (Shown if no info stored) -->
   <div id="entryFormContainer" class="container">
-    <h1>Welcome</h1>
-    <p>Please enter your information so i know who you are:</p>
+    <h1>Welcome!</h1>
+    <p>Please enter your information:</p>
     <form id="entryForm">
       <label for="fullname">Full Name:</label>
       <input type="text" id="fullname" name="fullname" required>
@@ -124,7 +140,13 @@
     </form>
   </div>
 
-  <!-- Main Search Page -->
+  <!-- Navigation Bar for Main and Banned Tabs (Shown after entry) -->
+  <div id="navBar" class="container hidden">
+    <button id="mainTabButton">Main</button>
+    <button id="bannedTabButton">Banned</button>
+  </div>
+
+  <!-- Main Page Container (Search interface and Info button) -->
   <div id="mainPageContainer" class="container hidden">
     <h1>Custom Search</h1>
     <form id="searchForm">
@@ -132,26 +154,55 @@
       <button type="submit">Search</button>
     </form>
     <button id="infoButton">Info</button>
+    <!-- Info Panel appears after correct password is entered -->
     <div id="infoPanel">
       <h2>All Entries</h2>
       <div id="infoContent"></div>
+      <!-- Red Ban Button (for admin use) -->
+      <button id="banButton" style="background: red; color: white; margin-top: 10px;">Ban</button>
     </div>
   </div>
 
+  <!-- Banned Page Container (Shown if the user is banned) -->
+  <div id="bannedPageContainer" class="container hidden">
+      <h1>Banned</h1>
+      <p>You have been banned from using this website.</p>
+      <button id="unbanButton">Unban</button>
+  </div>
+
   <script>
-    // Check if user info exists in localStorage; if so, skip the entry form.
-    function init() {
-      var userInfo = localStorage.getItem("userInfo");
-      if (userInfo) {
-        document.getElementById("entryFormContainer").classList.add("hidden");
-        document.getElementById("mainPageContainer").classList.remove("hidden");
+    // Check whether the user is banned.
+    function isBanned() {
+      return localStorage.getItem("banned") === "true";
+    }
+
+    // Show the main (search) view if not banned.
+    function showMainView() {
+      if (isBanned()) {
+        alert("You are banned from using the website.");
+        return;
+      }
+      document.getElementById("mainPageContainer").classList.remove("hidden");
+      document.getElementById("bannedPageContainer").classList.add("hidden");
+    }
+
+    // Show the banned view.
+    function showBannedView() {
+      document.getElementById("bannedPageContainer").classList.remove("hidden");
+      document.getElementById("mainPageContainer").classList.add("hidden");
+    }
+
+    // Initialize the navigation UI (both tabs become visible after user info is stored).
+    function initMainUI() {
+      document.getElementById("navBar").classList.remove("hidden");
+      if (isBanned()) {
+        showBannedView();
       } else {
-        document.getElementById("entryFormContainer").classList.remove("hidden");
-        document.getElementById("mainPageContainer").classList.add("hidden");
+        showMainView();
       }
     }
 
-    // Add a new entry to a global list stored in localStorage (if not already present).
+    // Add a new entry to the global list (if not already present).
     function addEntry(fullname, grade) {
       var entries = localStorage.getItem("allEntries");
       if (entries) {
@@ -168,7 +219,7 @@
       }
     }
 
-    // Handle submission of the user info form.
+    // Handle the user information form submission.
     document.getElementById("entryForm").addEventListener("submit", function(e) {
       e.preventDefault();
       var fullname = document.getElementById("fullname").value.trim();
@@ -181,24 +232,28 @@
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
       addEntry(fullname, grade);
       document.getElementById("entryFormContainer").classList.add("hidden");
-      document.getElementById("mainPageContainer").classList.remove("hidden");
+      initMainUI();
     });
 
-    // Handle search form submission.
+    // Handle the search form submission.
     document.getElementById("searchForm").addEventListener("submit", function(e) {
       e.preventDefault();
+      if (isBanned()) {
+        alert("You are banned from using the website.");
+        return;
+      }
       var query = document.getElementById("searchQuery").value.trim();
       if (!query) return;
       
       // Update the browser's URL with the search query.
       history.pushState({}, '', '?q=' + encodeURIComponent(query));
       
-      // Provide visual feedback that a search is in progress.
+      // Provide feedback that the search is in progress.
       var searchButton = e.target.querySelector('button');
       searchButton.textContent = "Searching...";
       searchButton.disabled = true;
       
-      // After a short delay, randomly choose one of several search URLs.
+      // After a brief delay, randomly choose a search engine.
       setTimeout(function() {
         var urls = [
           "https://www.google.com/search?q=",
@@ -210,8 +265,12 @@
       }, 800);
     });
 
-    // Handle Info button click: prompt for the password and, if correct, display all entries.
+    // Handle the Info button click.
     document.getElementById("infoButton").addEventListener("click", function() {
+      if (isBanned()) {
+        alert("You are banned from using the website.");
+        return;
+      }
       var password = prompt("Enter password:");
       if (password === null) return;
       if (password !== "Mason1966") {
@@ -233,7 +292,45 @@
       document.getElementById("infoPanel").style.display = "block";
     });
 
-    // Initialize the page.
+    // Handle the red Ban button click.
+    document.getElementById("banButton").addEventListener("click", function() {
+      if (confirm("Are you sure you want to ban this user?")) {
+        localStorage.setItem("banned", "true");
+        alert("User has been banned.");
+        showBannedView();
+      }
+    });
+
+    // Handle the Unban button click.
+    document.getElementById("unbanButton").addEventListener("click", function() {
+      // (Optionally, you could prompt for admin password here as well.)
+      localStorage.setItem("banned", "false");
+      alert("User has been unbanned.");
+      showMainView();
+    });
+
+    // Navigation bar event listeners.
+    document.getElementById("mainTabButton").addEventListener("click", function(){
+      if (isBanned()) {
+        alert("You are banned from using the website.");
+      } else {
+        showMainView();
+      }
+    });
+    document.getElementById("bannedTabButton").addEventListener("click", function(){
+      showBannedView();
+    });
+
+    // On page load, check if user info exists and initialize the UI.
+    function init() {
+      var userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        document.getElementById("entryFormContainer").classList.add("hidden");
+        initMainUI();
+      } else {
+        document.getElementById("entryFormContainer").classList.remove("hidden");
+      }
+    }
     init();
   </script>
 </body>
