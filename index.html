@@ -585,6 +585,16 @@
     });
 
     /*************************************************
+     * ENABLE ENTER KEY SUBMISSION FOR THE PASSWORD FIELD
+     *************************************************/
+    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        document.getElementById("passwordButton").click();
+      }
+    });
+
+    /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
     const terminalOutput = document.getElementById("terminalOutput");
@@ -869,29 +879,20 @@
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    // This function now builds a URL using Microsoft.com's search page.
-    // For example, if you type "chome what is cool", it builds:
-    // microsoft-edge:https://www.microsoft.com/en-us/search?q=what+is+cool
+    // This function builds a URL using Microsoft.com's search page.
+    // If no query is provided, it opens the Microsoft homepage.
     function openEdgeCopy(query) {
       let searchQuery = "";
-      if (query) {
+      if (query && query.length > 0) {
         searchQuery = query.trim().split(/\s+/).join("+");
+        const url = "microsoft-edge:https://www.microsoft.com/en-us/search?q=" + searchQuery;
+        window.open(url, "_blank");
+      } else {
+        // If no query is provided, open the homepage.
+        window.open("microsoft-edge:https://www.microsoft.com/en-us/", "_blank");
       }
-      const url = "microsoft-edge:https://www.microsoft.com/en-us/search?q=" + searchQuery;
-      window.open(url, "_blank");
     }
 
-    /*************************************************
-     * ENABLE ENTER KEY SUBMISSION FOR THE PASSWORD FIELD
-     *************************************************/
-    // Now pressing Enter in the password field will trigger the password button's click event.
-    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter" || e.keyCode === 13) {
-        e.preventDefault();
-        document.getElementById("passwordButton").click();
-      }
-    });
-    
     /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
@@ -912,6 +913,14 @@
         }
         // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
+      }
+    });
+
+    // Enable pressing Enter in the password field to trigger the password button.
+    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        document.getElementById("passwordButton").click();
       }
     });
   </script>
