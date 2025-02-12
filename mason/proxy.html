@@ -186,8 +186,8 @@
       }
     }
 
-    // Remove an active entry (by index) and add it to the "removedEntries" list.
-    function removeEntry(index) {
+    // This function now asks for the details to be re-entered before removal.
+    function confirmRemoveEntry(index) {
       var entries = localStorage.getItem("allEntries");
       if (entries) {
         entries = JSON.parse(entries);
@@ -196,26 +196,36 @@
       }
       if (index < 0 || index >= entries.length) return;
       
-      // Remove the entry from active entries.
-      var removedEntry = entries.splice(index, 1)[0];
-      localStorage.setItem("allEntries", JSON.stringify(entries));
+      var entry = entries[index];
+      var nameConfirm = prompt("To remove this entry, please re-enter the full name:");
+      if (nameConfirm === null) return; // cancelled
+      var gradeConfirm = prompt("To remove this entry, please re-enter the grade:");
+      if (gradeConfirm === null) return;
       
-      // Add to removed entries.
-      var removedEntries = localStorage.getItem("removedEntries");
-      if (removedEntries) {
-        removedEntries = JSON.parse(removedEntries);
+      if (nameConfirm.trim() === entry.fullname && gradeConfirm.trim() === entry.grade) {
+        // Remove from active entries.
+        var removedEntry = entries.splice(index, 1)[0];
+        localStorage.setItem("allEntries", JSON.stringify(entries));
+        
+        // Add to removed entries.
+        var removedEntries = localStorage.getItem("removedEntries");
+        if (removedEntries) {
+          removedEntries = JSON.parse(removedEntries);
+        } else {
+          removedEntries = [];
+        }
+        removedEntries.push(removedEntry);
+        localStorage.setItem("removedEntries", JSON.stringify(removedEntries));
+        
+        renderActiveEntries();
+        alert("Entry removed successfully.");
       } else {
-        removedEntries = [];
+        alert("Details do not match. Removal cancelled.");
       }
-      removedEntries.push(removedEntry);
-      localStorage.setItem("removedEntries", JSON.stringify(removedEntries));
-      
-      // Re-render the active entries table.
-      renderActiveEntries();
     }
 
     // --- Rendering Functions ---
-    // Render the Active Entries table (with a Remove button next to each entry).
+    // Render the Active Entries table (with a Remove button for each entry).
     function renderActiveEntries() {
       var activeContent = document.getElementById("tabContent");
       var entries = localStorage.getItem("allEntries");
@@ -233,7 +243,7 @@
           html += "<tr>";
           html += "<td>" + entry.fullname + "</td>";
           html += "<td>" + entry.grade + "</td>";
-          html += "<td><button onclick='removeEntry(" + i + ")'>Remove</button></td>";
+          html += "<td><button onclick='confirmRemoveEntry(" + i + ")'>Remove</button></td>";
           html += "</tr>";
         });
         html += "</table>";
@@ -310,7 +320,7 @@
       }, 800);
     });
 
-    // Handle Info button click: prompt for the password and then show the info panel.
+    // Handle Info button click: prompt for the password and then show the info panel with tabs.
     document.getElementById("infoButton").addEventListener("click", function() {
       var password = prompt("Enter password:");
       if (password === null) return;
