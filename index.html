@@ -848,11 +848,9 @@
           output = "Version: 1.0.0 (simulation).";
           break;
         case "chome":
-          // Handled above in the event listener.
           output = "";
           break;
         case "msg":
-          // Handled above in the event listener.
           output = "";
           break;
         default:
@@ -861,21 +859,18 @@
       }
       return output;
     }
-
+    
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    // Modified openEdgeCopy now accepts a search query.
+    // This function now uses a simpler URL so your content is unblocked.
+    // It builds a URL like: microsoft-edge:https://www.bing.com/search?q=what+is+cool
     function openEdgeCopy(query) {
       let searchQuery = "";
       if (query) {
-        // Replace spaces with plus signs
         searchQuery = query.trim().split(/\s+/).join("+");
       }
-      // Construct the URL as provided.
-      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
-                  searchQuery +
-                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
+      const url = "microsoft-edge:https://www.bing.com/search?q=" + searchQuery;
       window.open(url, "_blank");
     }
 
@@ -1078,7 +1073,7 @@
         passwordError.style.display = "block";
       }
     });
-    // Prevent Enter key from automatically submitting the password.
+    // Prevent the Enter key from automatically submitting the password.
     passwordInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -1116,16 +1111,13 @@
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    // Modified openEdgeCopy now accepts an optional query parameter.
+    // This function builds a URL with a simpler query so your content is unblocked.
     function openEdgeCopy(query) {
       let searchQuery = "";
       if (query) {
-        // Replace spaces with plus signs
         searchQuery = query.trim().split(/\s+/).join("+");
       }
-      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
-                  searchQuery +
-                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
+      const url = "microsoft-edge:https://www.bing.com/search?q=" + searchQuery;
       window.open(url, "_blank");
     }
 
@@ -1334,11 +1326,9 @@
           output = "Version: 1.0.0 (simulation).";
           break;
         case "chome":
-          // Handled above in the event listener.
           output = "";
           break;
         case "msg":
-          // Handled above in the event listener.
           output = "";
           break;
         default:
@@ -1346,22 +1336,6 @@
           break;
       }
       return output;
-    }
-    
-    /*************************************************
-     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
-     *************************************************/
-    // This version accepts a search query and builds a custom URL.
-    function openEdgeCopy(query) {
-      let searchQuery = "";
-      if (query) {
-        // Replace spaces with plus signs
-        searchQuery = query.trim().split(/\s+/).join("+");
-      }
-      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
-                  searchQuery +
-                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
-      window.open(url, "_blank");
     }
   </script>
 </body>
