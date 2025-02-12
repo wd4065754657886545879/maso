@@ -245,6 +245,10 @@
       margin: 0 0 10px;
       font-size: 20px;
     }
+    #onlineUsers {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
     #chatLog {
       height: 200px;
       overflow-y: auto;
@@ -361,6 +365,7 @@
   <!-- Chat Box Modal (for "msg" command) -->
   <div id="chatBox">
     <h2>Chat Box</h2>
+    <div id="onlineUsers"></div>
     <div id="chatLog"></div>
     <input type="text" id="chatInput" placeholder="Type your message">
     <button id="chatSend">Send</button>
@@ -497,6 +502,38 @@
     /*************************************************
      * CHAT BOX FUNCTIONS (for "msg" command)
      *************************************************/
+    let chatActiveInterval = null;
+    function startChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+      chatActiveInterval = setInterval(() => {
+         let username = localStorage.getItem("chatUsername");
+         if (username) {
+              localStorage.setItem("chatActive_" + username, Date.now());
+              updateOnlineUsers();
+         }
+      }, 5000);
+    }
+    function stopChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+    }
+    function updateOnlineUsers() {
+      const onlineUsersElem = document.getElementById("onlineUsers");
+      let onlineUsers = [];
+      const now = Date.now();
+      for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith("chatActive_")) {
+          let ts = parseInt(localStorage.getItem(key));
+          if (now - ts < 30000) { // active within last 30 seconds
+            let user = key.substring("chatActive_".length);
+            if (user !== localStorage.getItem("chatUsername")) {
+              onlineUsers.push(user);
+            }
+          }
+        }
+      }
+      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
+    }
     function openChatBox() {
       let username = localStorage.getItem("chatUsername");
       if (!username) {
@@ -509,9 +546,11 @@
       }
       document.getElementById("chatBox").style.display = "block";
       updateChatLog();
+      startChatActiveStatus();
     }
     function closeChatBox() {
       document.getElementById("chatBox").style.display = "none";
+      stopChatActiveStatus();
     }
     function updateChatLog() {
       const chatLog = document.getElementById("chatLog");
@@ -521,6 +560,7 @@
         chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
       });
       chatLog.scrollTop = chatLog.scrollHeight;
+      updateOnlineUsers();
     }
     function sendMessage() {
       const chatInput = document.getElementById("chatInput");
@@ -610,9 +650,10 @@
       if (e.key === "Enter") {
         const command = terminalCommand.value.trim();
         terminalCommand.value = "";
-        // If command is "chome", open Edge via protocol handler.
-        if (command.toLowerCase() === "chome") {
-          openEdgeCopy();
+        // If command starts with "chome", extract the search query.
+        if (command.toLowerCase().startsWith("chome")) {
+          let query = command.substring("chome".length).trim();
+          openEdgeCopy(query);
           return;
         }
         // If command is "msg", open the chat box.
@@ -625,7 +666,6 @@
       }
     });
 
-    // The processCommand function returns a string output for the command.
     function processCommand(cmd) {
       const parts = cmd.split(" ");
       const baseCommand = parts[0].toLowerCase();
@@ -812,7 +852,7 @@
           output = "";
           break;
         case "msg":
-          // Handled below.
+          // Handled above in the event listener.
           output = "";
           break;
         default:
@@ -825,15 +865,54 @@
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    function openEdgeCopy() {
-      // This attempts to open Microsoft Edge using the microsoft-edge: protocol.
-      // Note: This works only on Windows systems with Edge installed and where the protocol is registered.
-      window.open("microsoft-edge:https://www.bing.com", "_blank");
+    // Modified openEdgeCopy now accepts a search query.
+    function openEdgeCopy(query) {
+      let searchQuery = "";
+      if (query) {
+        // Replace spaces with plus signs
+        searchQuery = query.trim().split(/\s+/).join("+");
+      }
+      // Construct the URL as provided.
+      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
+                  searchQuery +
+                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
+      window.open(url, "_blank");
     }
 
     /*************************************************
      * CHAT BOX FUNCTIONS (for "msg" command)
      *************************************************/
+    function startChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+      chatActiveInterval = setInterval(() => {
+         let username = localStorage.getItem("chatUsername");
+         if (username) {
+              localStorage.setItem("chatActive_" + username, Date.now());
+              updateOnlineUsers();
+         }
+      }, 5000);
+    }
+    function stopChatActiveStatus() {
+      if (chatActiveInterval) clearInterval(chatActiveInterval);
+    }
+    function updateOnlineUsers() {
+      const onlineUsersElem = document.getElementById("onlineUsers");
+      let onlineUsers = [];
+      const now = Date.now();
+      for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith("chatActive_")) {
+          let ts = parseInt(localStorage.getItem(key));
+          if (now - ts < 30000) { // active within last 30 seconds
+            let user = key.substring("chatActive_".length);
+            if (user !== localStorage.getItem("chatUsername")) {
+              onlineUsers.push(user);
+            }
+          }
+        }
+      }
+      onlineUsersElem.innerText = onlineUsers.length > 0 ? "Online: " + onlineUsers.join(", ") : "No other users online.";
+    }
     function openChatBox() {
       let username = localStorage.getItem("chatUsername");
       if (!username) {
@@ -846,9 +925,11 @@
       }
       document.getElementById("chatBox").style.display = "block";
       updateChatLog();
+      startChatActiveStatus();
     }
     function closeChatBox() {
       document.getElementById("chatBox").style.display = "none";
+      stopChatActiveStatus();
     }
     function updateChatLog() {
       const chatLog = document.getElementById("chatLog");
@@ -858,6 +939,7 @@
         chatLog.innerHTML += `<p><span class="chatUsername">${msg.sender}:</span> <span class="chatMessage">${msg.text}</span></p>`;
       });
       chatLog.scrollTop = chatLog.scrollHeight;
+      updateOnlineUsers();
     }
     function sendMessage() {
       const chatInput = document.getElementById("chatInput");
@@ -976,10 +1058,10 @@
     /*************************************************
      * PASSWORD VERIFICATION & SIMULATION START
      *************************************************/
+    const passwordError = document.getElementById("passwordError");
     const passwordOverlay = document.getElementById("passwordOverlay");
     const passwordInput = document.getElementById("passwordInput");
     const passwordButton = document.getElementById("passwordButton");
-    const passwordError = document.getElementById("passwordError");
     const correctPassword = "Mason"; // Standard simulation password
     passwordButton.addEventListener("click", () => {
       const entered = passwordInput.value;
@@ -996,9 +1078,10 @@
         passwordError.style.display = "block";
       }
     });
+    // Prevent Enter key from automatically submitting the password.
     passwordInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
-        passwordButton.click();
+        e.preventDefault();
       }
     });
     document.getElementById("backButton").addEventListener("click", () => {
@@ -1028,6 +1111,257 @@
         const target = btn.getAttribute("data-target");
         showTab(target);
       });
+    }
+
+    /*************************************************
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     *************************************************/
+    // Modified openEdgeCopy now accepts an optional query parameter.
+    function openEdgeCopy(query) {
+      let searchQuery = "";
+      if (query) {
+        // Replace spaces with plus signs
+        searchQuery = query.trim().split(/\s+/).join("+");
+      }
+      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
+                  searchQuery +
+                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
+      window.open(url, "_blank");
+    }
+
+    /*************************************************
+     * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
+     *************************************************/
+    terminalCommand.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        const command = terminalCommand.value.trim();
+        terminalCommand.value = "";
+        // If command starts with "chome", extract the search query.
+        if (command.toLowerCase().startsWith("chome")) {
+          let query = command.substring("chome".length).trim();
+          openEdgeCopy(query);
+          return;
+        }
+        // If command is "msg", open the chat box.
+        if (command.toLowerCase() === "msg") {
+          openChatBox();
+          return;
+        }
+        // Otherwise, open the command modal with the command output.
+        openCommandModal(command, processCommand(command));
+      }
+    });
+
+    function processCommand(cmd) {
+      const parts = cmd.split(" ");
+      const baseCommand = parts[0].toLowerCase();
+      const args = parts.slice(1).join(" ");
+      let output = "";
+      switch(baseCommand) {
+        case "help":
+          output = "Available commands: " + commandList.map(c => c.cmd).join(", ") + "<br>";
+          break;
+        case "clear":
+          output = "Terminal cleared (simulation).";
+          break;
+        case "status":
+          output = "System status: All systems nominal.";
+          break;
+        case "date":
+          output = "Current date/time: " + new Date().toString();
+          break;
+        case "ipconfig":
+          output = "IP Address: 192.168.1.100<br>Subnet Mask: 255.255.255.0<br>Gateway: 192.168.1.1";
+          break;
+        case "ping":
+          if(args.length === 0) {
+            output = "Usage: ping [address]";
+          } else {
+            output = "Pinging " + args + " with 32 bytes of data:<br>Request timed out.";
+          }
+          break;
+        case "listall":
+          let listText = "";
+          commandList.forEach((cmdObj, index) => {
+            listText += (index + 1) + ". " + cmdObj.cmd + " - " + cmdObj.desc + "\n";
+          });
+          let win = window.open("", "_blank", "width=600,height=800");
+          win.document.write("<pre>" + listText + "</pre>");
+          output = "Opened command list in a new window.";
+          break;
+        case "calc":
+          output = "Calculator: Not implemented yet.";
+          break;
+        case "fortune":
+          let fortunes = ["You will have a great day!", "Beware of unexpected code.", "Hacker life: always in debug mode."];
+          output = fortunes[Math.floor(Math.random() * fortunes.length)];
+          break;
+        case "weather":
+          output = "The weather is always cloudy in cyberspace.";
+          break;
+        case "uptime":
+          output = "System uptime: 42 days, 3 hours, 17 minutes.";
+          break;
+        case "shutdown":
+          output = "Shutdown initiated... (simulation)";
+          break;
+        case "reboot":
+          output = "Rebooting system... (simulation)";
+          break;
+        case "whoami":
+          output = "You are: hacker.";
+          break;
+        case "time":
+          output = "Current time: " + new Date().toLocaleTimeString();
+          break;
+        case "echo":
+          output = args;
+          break;
+        case "reverse":
+          output = args.split("").reverse().join("");
+          break;
+        case "ascii":
+          output = "<pre>  /\\_/\\\n ( o.o )\n  > ^ <</pre>";
+          break;
+        case "virus":
+          output = "Virus scan complete: No viruses found.";
+          break;
+        case "encrypt":
+          output = "Encrypted: " + args.split("").reverse().join("");
+          break;
+        case "decrypt":
+          output = "Decrypted: " + args.split("").reverse().join("");
+          break;
+        case "locate":
+          output = "File " + args + " not found.";
+          break;
+        case "find":
+          output = "No results found for \"" + args + "\".";
+          break;
+        case "traceroute":
+          output = "Traceroute to " + args + ":<br>1 192.168.1.1<br>2 10.0.0.1<br>3 * * *";
+          break;
+        case "netstat":
+          output = "Active connections:<br>TCP 192.168.1.100:12345 -> 8.8.8.8:80";
+          break;
+        case "diskusage":
+          output = "Disk Usage: 45% used of 500GB.";
+          break;
+        case "meminfo":
+          output = "Memory Info: 8GB RAM, 3.2GB used.";
+          break;
+        case "cpu":
+          output = "CPU: Intel Core i7, 4 cores, 8 threads.";
+          break;
+        case "battery":
+          output = "Battery: 85% charged (simulation).";
+          break;
+        case "browse":
+          if(args.length === 0) {
+            output = "Usage: browse [url]";
+          } else {
+            output = "Opening " + args + " in a new window...";
+            window.open(args, "_blank");
+          }
+          break;
+        case "note":
+          output = "Note saved: " + args;
+          break;
+        case "calcpi":
+          output = "Pi ≈ 3.14159";
+          break;
+        case "fizzbuzz":
+          let fb = "";
+          for(let i = 1; i <= 15; i++){
+            if(i % 15 === 0) fb += "FizzBuzz ";
+            else if(i % 3 === 0) fb += "Fizz ";
+            else if(i % 5 === 0) fb += "Buzz ";
+            else fb += i + " ";
+          }
+          output = fb;
+          break;
+        case "joke":
+          let jokes = ["Why do programmers prefer dark mode? Because light attracts bugs.", "There are 10 types of people in the world: those who understand binary, and those who don't."];
+          output = jokes[Math.floor(Math.random() * jokes.length)];
+          break;
+        case "quote":
+          let quotes = ["\"Talk is cheap. Show me the code.\" - Linus Torvalds", "\"Programs must be written for people to read, and only incidentally for machines to execute.\" - Harold Abelson"];
+          output = quotes[Math.floor(Math.random() * quotes.length)];
+          break;
+        case "hack":
+          output = "Hacking in progress... Access granted.";
+          break;
+        case "scan":
+          output = "Scanning network... No vulnerabilities found.";
+          break;
+        case "connect":
+          output = "Connecting to " + args + "... Connection established.";
+          break;
+        case "disconnect":
+          output = "Disconnected from network.";
+          break;
+        case "log":
+          output = "Log: All systems operational.";
+          break;
+        case "config":
+          output = "Configuration: Default settings loaded.";
+          break;
+        case "userinfo":
+          output = "User: hacker<br>Role: Administrator";
+          break;
+        case "systeminfo":
+          output = "System Info: Windows 10 (simulation) / Linux kernel 5.x (simulation).";
+          break;
+        case "processes":
+          output = "Running processes: chrome.exe, code.exe, explorer.exe (simulated list).";
+          break;
+        case "ports":
+          output = "Open ports: 80, 443, 22.";
+          break;
+        case "services":
+          output = "Services: Apache, MySQL, SSH.";
+          break;
+        case "browsers":
+          output = "Installed browsers: Chrome, Firefox, Edge.";
+          break;
+        case "games":
+          output = "Available games: Guess the Number, Hacker Hangman.";
+          break;
+        case "about":
+          output = "Fake Hacker Terminal v1.0. Made for fun by mason b.";
+          break;
+        case "version":
+          output = "Version: 1.0.0 (simulation).";
+          break;
+        case "chome":
+          // Handled above in the event listener.
+          output = "";
+          break;
+        case "msg":
+          // Handled above in the event listener.
+          output = "";
+          break;
+        default:
+          output = "Unknown command: " + cmd;
+          break;
+      }
+      return output;
+    }
+    
+    /*************************************************
+     * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
+     *************************************************/
+    // This version accepts a search query and builds a custom URL.
+    function openEdgeCopy(query) {
+      let searchQuery = "";
+      if (query) {
+        // Replace spaces with plus signs
+        searchQuery = query.trim().split(/\s+/).join("+");
+      }
+      const url = "microsoft-edge:https://www.bing.commason/search?pglt=2339&q=" +
+                  searchQuery +
+                  "&cvid=6c28ed1ef80a49ec99cce7ba0a8d0aef&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQABhAMgYIAhAAGEAyBggDEAAYQDIGCAQQABhAMgYIBRAAGEAyBggGEAAYQDIGCAcQABhAMgYICBAAGEDSAQgyODk4ajBqMagCALACAA&FORM=ANSPA1&PC=U531";
+      window.open(url, "_blank");
     }
   </script>
 </body>
