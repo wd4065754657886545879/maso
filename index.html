@@ -869,7 +869,7 @@
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    // This function builds a URL using the Microsoft website's search page.
+    // This function now builds a URL using Microsoft.com's search page.
     // For example, if you type "chome what is cool", it builds:
     // microsoft-edge:https://www.microsoft.com/en-us/search?q=what+is+cool
     function openEdgeCopy(query) {
@@ -881,6 +881,17 @@
       window.open(url, "_blank");
     }
 
+    /*************************************************
+     * ENABLE ENTER KEY SUBMISSION FOR THE PASSWORD FIELD
+     *************************************************/
+    // Now pressing Enter in the password field will trigger the password button's click event.
+    document.getElementById("passwordInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        document.getElementById("passwordButton").click();
+      }
+    });
+    
     /*************************************************
      * TERMINAL COMMAND PARSER (50 Commands with their own GUIs)
      *************************************************/
@@ -901,13 +912,6 @@
         }
         // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
-      }
-    });
-
-    // Enable pressing Enter in the password field to trigger the password button.
-    passwordInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        passwordButton.click();
       }
     });
   </script>
