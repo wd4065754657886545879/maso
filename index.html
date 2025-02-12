@@ -26,7 +26,7 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       z-index: 1;
       pointer-events: none;
@@ -44,9 +44,9 @@
     /* Password overlay styles */
     #passwordOverlay {
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       background: rgba(0, 0, 0, 0.9);
       display: flex;
@@ -869,8 +869,8 @@
     /*************************************************
      * OPEN MICROSOFT EDGE USING ITS PROTOCOL HANDLER (for "chome")
      *************************************************/
-    // This function now builds a URL using the Microsoft website's search (not Bing).
-    // For example: if you type "chome what is cool", it builds:
+    // This function builds a URL using the Microsoft website's search page.
+    // For example, if you type "chome what is cool", it builds:
     // microsoft-edge:https://www.microsoft.com/en-us/search?q=what+is+cool
     function openEdgeCopy(query) {
       let searchQuery = "";
@@ -901,6 +901,13 @@
         }
         // Otherwise, open the command modal with the command output.
         openCommandModal(command, processCommand(command));
+      }
+    });
+
+    // Enable pressing Enter in the password field to trigger the password button.
+    passwordInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        passwordButton.click();
       }
     });
   </script>
