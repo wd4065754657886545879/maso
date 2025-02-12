@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Custom Search</title>
-  <!-- Use a modern Google Font -->
+  <title>Custom Search & Info Manager</title>
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
@@ -27,6 +27,7 @@
       width: 90%;
       text-align: center;
       transition: transform 0.3s ease;
+      margin: 15px;
     }
     .container:hover {
       transform: scale(1.02);
@@ -80,11 +81,29 @@
       background: #a1c8ff;
       cursor: not-allowed;
     }
+    /* Info Panel and Tabs */
     #infoPanel {
       margin-top: 30px;
       display: none;
       text-align: left;
       animation: fadeIn 0.5s ease-in-out;
+    }
+    #infoTabs {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .tab-button {
+      background: #66a6ff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    .tab-button.active {
+      background: #559be0;
     }
     table {
       width: 100%;
@@ -102,9 +121,7 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -132,14 +149,14 @@
       <button type="submit">Search</button>
     </form>
     <button id="infoButton">Info</button>
+    <!-- Info Panel where the tab structure is injected -->
     <div id="infoPanel">
-      <h2>All Entries</h2>
       <div id="infoContent"></div>
     </div>
   </div>
 
   <script>
-    // Check if user info exists in localStorage; if so, skip the entry form.
+    // --- Initialization ---
     function init() {
       var userInfo = localStorage.getItem("userInfo");
       if (userInfo) {
@@ -151,7 +168,8 @@
       }
     }
 
-    // Add a new entry to a global list stored in localStorage (if not already present).
+    // --- Data Management ---
+    // Add a new entry to the "allEntries" list (if not already present).
     function addEntry(fullname, grade) {
       var entries = localStorage.getItem("allEntries");
       if (entries) {
@@ -167,6 +185,88 @@
         localStorage.setItem("allEntries", JSON.stringify(entries));
       }
     }
+
+    // Remove an active entry (by index) and add it to the "removedEntries" list.
+    function removeEntry(index) {
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      if (index < 0 || index >= entries.length) return;
+      
+      // Remove the entry from active entries.
+      var removedEntry = entries.splice(index, 1)[0];
+      localStorage.setItem("allEntries", JSON.stringify(entries));
+      
+      // Add to removed entries.
+      var removedEntries = localStorage.getItem("removedEntries");
+      if (removedEntries) {
+        removedEntries = JSON.parse(removedEntries);
+      } else {
+        removedEntries = [];
+      }
+      removedEntries.push(removedEntry);
+      localStorage.setItem("removedEntries", JSON.stringify(removedEntries));
+      
+      // Re-render the active entries table.
+      renderActiveEntries();
+    }
+
+    // --- Rendering Functions ---
+    // Render the Active Entries table (with a Remove button next to each entry).
+    function renderActiveEntries() {
+      var activeContent = document.getElementById("tabContent");
+      var entries = localStorage.getItem("allEntries");
+      if (entries) {
+        entries = JSON.parse(entries);
+      } else {
+        entries = [];
+      }
+      var html = "";
+      if (entries.length === 0) {
+        html = "<p>No active entries.</p>";
+      } else {
+        html += "<table><tr><th>Full Name</th><th>Grade</th><th>Action</th></tr>";
+        entries.forEach(function(entry, i) {
+          html += "<tr>";
+          html += "<td>" + entry.fullname + "</td>";
+          html += "<td>" + entry.grade + "</td>";
+          html += "<td><button onclick='removeEntry(" + i + ")'>Remove</button></td>";
+          html += "</tr>";
+        });
+        html += "</table>";
+      }
+      activeContent.innerHTML = html;
+    }
+
+    // Render the Removed Entries table.
+    function renderRemovedEntries() {
+      var tabContent = document.getElementById("tabContent");
+      var removedEntries = localStorage.getItem("removedEntries");
+      if (removedEntries) {
+        removedEntries = JSON.parse(removedEntries);
+      } else {
+        removedEntries = [];
+      }
+      var html = "";
+      if (removedEntries.length === 0) {
+        html = "<p>No removed entries.</p>";
+      } else {
+        html += "<table><tr><th>Full Name</th><th>Grade</th></tr>";
+        removedEntries.forEach(function(entry) {
+          html += "<tr>";
+          html += "<td>" + entry.fullname + "</td>";
+          html += "<td>" + entry.grade + "</td>";
+          html += "</tr>";
+        });
+        html += "</table>";
+      }
+      tabContent.innerHTML = html;
+    }
+
+    // --- Event Listeners ---
 
     // Handle submission of the user info form.
     document.getElementById("entryForm").addEventListener("submit", function(e) {
@@ -193,12 +293,12 @@
       // Update the browser's URL with the search query.
       history.pushState({}, '', '?q=' + encodeURIComponent(query));
       
-      // Provide visual feedback that a search is in progress.
+      // Provide visual feedback.
       var searchButton = e.target.querySelector('button');
       searchButton.textContent = "Searching...";
       searchButton.disabled = true;
       
-      // After a short delay, randomly choose one of several search URLs.
+      // After a short delay, randomly choose a search engine.
       setTimeout(function() {
         var urls = [
           "https://www.google.com/search?q=",
@@ -210,7 +310,7 @@
       }, 800);
     });
 
-    // Handle Info button click: prompt for the password and, if correct, display all entries.
+    // Handle Info button click: prompt for the password and then show the info panel.
     document.getElementById("infoButton").addEventListener("click", function() {
       var password = prompt("Enter password:");
       if (password === null) return;
@@ -218,19 +318,31 @@
         alert("Incorrect password!");
         return;
       }
-      var entries = localStorage.getItem("allEntries");
-      if (entries) {
-        entries = JSON.parse(entries);
-      } else {
-        entries = [];
-      }
-      var html = "<table><tr><th>Full Name</th><th>Grade</th></tr>";
-      entries.forEach(function(entry) {
-        html += "<tr><td>" + entry.fullname + "</td><td>" + entry.grade + "</td></tr>";
-      });
-      html += "</table>";
-      document.getElementById("infoContent").innerHTML = html;
+      // Build the tab structure in the info panel.
+      var infoHTML = `
+        <div id="infoTabs" style="text-align:center;">
+          <button id="activeTab" class="tab-button active">Active Entries</button>
+          <button id="removedTab" class="tab-button">Removed Entries</button>
+        </div>
+        <div id="tabContent"></div>
+      `;
+      document.getElementById("infoContent").innerHTML = infoHTML;
       document.getElementById("infoPanel").style.display = "block";
+      
+      // Attach event listeners for tab switching.
+      document.getElementById("activeTab").addEventListener("click", function() {
+        document.getElementById("activeTab").classList.add("active");
+        document.getElementById("removedTab").classList.remove("active");
+        renderActiveEntries();
+      });
+      document.getElementById("removedTab").addEventListener("click", function() {
+        document.getElementById("removedTab").classList.add("active");
+        document.getElementById("activeTab").classList.remove("active");
+        renderRemovedEntries();
+      });
+      
+      // Render active entries by default.
+      renderActiveEntries();
     });
 
     // Initialize the page.
